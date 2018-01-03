@@ -1,15 +1,5 @@
 from PySide2 import QtGui, QtWidgets, QtCore
 
-class MyQGraphicsScene(QtWidgets.QGraphicsScene):
-	mousePress = QtCore.Signal(list)
-
-	def __init__(self):
-		QtWidgets.QGraphicsScene.__init__(self)
-
-	def mousePressEvent(self, event):
-		scenePos = event.scenePos()
-		self.mousePress.emit([scenePos.x(), scenePos.y()])
-
 class FrameList(QtWidgets.QComboBox):
 	selectionChanged = QtCore.Signal()
 
@@ -28,6 +18,16 @@ class FrameList(QtWidgets.QComboBox):
 	def FrameChanged(self, ind = None):
 		self.selectionChanged.emit()
 
+class MyQGraphicsScene(QtWidgets.QGraphicsScene):
+	mousePress = QtCore.Signal(list)
+
+	def __init__(self):
+		QtWidgets.QGraphicsScene.__init__(self)
+
+	def mousePressEvent(self, event):
+		scenePos = event.scenePos()
+		self.mousePress.emit([scenePos.x(), scenePos.y()])
+
 class FrameView(QtWidgets.QWidget):
 	pointSelected = QtCore.Signal(int)
 
@@ -39,10 +39,8 @@ class FrameView(QtWidgets.QWidget):
 		self.currentFrame = None
 
 		self.layout = QtWidgets.QVBoxLayout()
+		self.layout.setContentsMargins(0, 0, 0, 0)
 		self.setLayout(self.layout)
-
-		self.frameCombo = FrameList()
-		self.layout.addWidget(self.frameCombo)
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
