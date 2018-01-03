@@ -37,10 +37,18 @@ class FrameView(QtWidgets.QWidget):
 		self.selectedPointIndex = []
 		self.clickedPoint = None
 		self.currentFrame = None
+		self.zoomScale = 1.0
 
 		self.layout = QtWidgets.QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
 		self.setLayout(self.layout)
+
+		self.toolbar = QtWidgets.QToolBar()
+		self.layout.addWidget(self.toolbar, 0)
+		self.actionZoomIn = self.toolbar.addAction("Zoom In")
+		self.actionZoomIn.triggered.connect(self.ZoomIn)
+		self.actionZoomOut = self.toolbar.addAction("Zoom Out")
+		self.actionZoomOut.triggered.connect(self.ZoomOut)
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
@@ -51,11 +59,13 @@ class FrameView(QtWidgets.QWidget):
 	def DrawFrame(self):
 		if self.currentFrame is None: return
 
-		frame = self.currentFrame
-
+		si = self.currentFrame.size()
+		frameZoomed = self.currentFrame.scaled(si.width()*self.zoomScale, si.height()*self.zoomScale)
+		
+		si2 = frameZoomed.size()
 		self.scene.clear()
-		self.scene.setSceneRect(0, 0, frame.size().width(), frame.size().height())
-		pix = QtGui.QPixmap(frame)
+		self.scene.setSceneRect(0, 0, si2.width(), si2.height())
+		pix = QtGui.QPixmap(frameZoomed)
 
 		gpm = QtWidgets.QGraphicsPixmapItem(pix)
 		self.scene.addItem(gpm)
@@ -67,8 +77,9 @@ class FrameView(QtWidgets.QWidget):
 			if self.selectedPointIndex is not None and ptNum == self.selectedPointIndex:
 				currentPen = penRed
 
-			self.scene.addLine(pt[0]-5., pt[1], pt[0]+5., pt[1], currentPen)
-			self.scene.addLine(pt[0], pt[1]-5., pt[0], pt[1]+5., currentPen)
+			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
+			self.scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
+			self.scene.addLine(spt[0], spt[1]-5., spt[0], spt[1]+5., currentPen)
 
 	def SetControlPoints(self, pts):
 		if pts is None:
@@ -88,7 +99,8 @@ class FrameView(QtWidgets.QWidget):
 		bestDist = None
 		bestInd = None
 		for ptNum, pt in enumerate(self.controlPoints):
-			dist = ((pt[0] - pos[0]) ** 2. + (pt[1] - pos[1]) ** 2.) ** 0.5
+			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
+			dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
 			if bestDist is None or dist < bestDist:
 				bestDist = dist
 				bestInd = ptNum
@@ -104,5 +116,13 @@ class FrameView(QtWidgets.QWidget):
 
 	def SetFrame(self, frame):
 		self.currentFrame = frame
+		self.DrawFrame()
+
+	def ZoomIn(self):
+		self.zoomScale *= 1.5
+		self.DrawFrame()
+
+	def ZoomOut(self):
+		self.zoomScale /= 1.5
 		self.DrawFrame()
 
