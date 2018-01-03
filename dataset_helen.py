@@ -13,11 +13,12 @@ class DatasetHelen(object):
 	def _ReadAnnotation(self):
 
 		self.annot = {}
-		annotationPath = "/home/tim/Desktop/Helen/annotation"
-		for fina in os.listdir(annotationPath):
-			fullFina = os.path.join(annotationPath, fina)
+		inTar = tarfile.open("/home/tim/Desktop/Helen/annotation.tar.gz", mode='r:gz')
 
-			fi = open(fullFina, "rt")
+		for tarInfo in inTar.getmembers():
+
+			fi = inTar.extractfile(tarInfo)
+			if fi is None: continue
 			imageName = None
 			imagePoints = []
 			for linum, li in enumerate(fi.readlines()):
@@ -29,7 +30,7 @@ class DatasetHelen(object):
 					imagePoints.append(pt)
 
 			self.annot[imageName] = imagePoints
-			self.imgToFilename[imageName] = fina
+			self.imgToFilename[imageName] = tarInfo.name
 
 	def SaveAnnotation(self, fina):
 		outTar = tarfile.open(fina, mode='w:gz')
