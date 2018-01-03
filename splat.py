@@ -7,9 +7,9 @@ import dataset_helen
 
 def SelectionChanged():
 	global window, dataset
-	img = dataset.GetFrame(window.CurrentText())
+	img = dataset.GetFrame(window.frameCombo.CurrentText())
 	window.SetFrame(img)
-	annotations = dataset.GetAnnotations(window.CurrentText())
+	annotations = dataset.GetAnnotations(window.frameCombo.CurrentText())
 	window.SetControlPoints(annotations)
 
 if __name__=="__main__":
@@ -22,8 +22,8 @@ if __name__=="__main__":
 	# Qt automatically creates top level application window if you
 	# instruct it to show() any GUI element
 	window = imgframe.FrameView()
-	window.selectionChanged.connect(SelectionChanged)
-	window.SetFrameNames(dataset.GetFrameNames())
+	window.frameCombo.selectionChanged.connect(SelectionChanged)
+	window.frameCombo.SetFrameNames(dataset.GetFrameNames())
 
 	window.show()
 

@@ -10,8 +10,25 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 		scenePos = event.scenePos()
 		self.mousePress.emit([scenePos.x(), scenePos.y()])
 
-class FrameView(QtWidgets.QWidget):
+class FrameList(QtWidgets.QComboBox):
 	selectionChanged = QtCore.Signal()
+
+	def __init__(self):
+		QtWidgets.QComboBox.__init__(self)
+		QtCore.QObject.connect(self, QtCore.SIGNAL('activated(int)'), self.FrameChanged)
+
+	def SetFrameNames(self, frameNames):
+		self.clear()
+		for fn in frameNames[::-1]:
+			self.addItem(fn)
+
+	def CurrentText(self):
+		return self.currentText()
+		
+	def FrameChanged(self, ind = None):
+		self.selectionChanged.emit()
+
+class FrameView(QtWidgets.QWidget):
 	pointSelected = QtCore.Signal(int)
 
 	def __init__(self):
@@ -24,28 +41,14 @@ class FrameView(QtWidgets.QWidget):
 		self.layout = QtWidgets.QVBoxLayout()
 		self.setLayout(self.layout)
 
-		self.frameCombo = QtWidgets.QComboBox()
+		self.frameCombo = FrameList()
 		self.layout.addWidget(self.frameCombo)
-		QtCore.QObject.connect(self.frameCombo, QtCore.SIGNAL('activated(int)'), self.FrameChanged)
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
 		self.view = QtWidgets.QGraphicsView(self.scene)
 		self.layout.addWidget(self.view, 1)
 		self.controlPoints = []
-
-	def SetFrameNames(self, frameNames):
-		self.frameCombo.clear()
-		frameNames.reverse()
-		for fn in frameNames:
-			self.frameCombo.addItem(fn)
-
-	def CurrentText(self):
-		return self.frameCombo.currentText()
-
-	def FrameChanged(self, ind = None):
-		self.selectionChanged.emit()
-		self.DrawFrame()
 
 	def DrawFrame(self):
 		if self.currentFrame is None: return
