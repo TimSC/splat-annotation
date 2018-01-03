@@ -12,6 +12,12 @@ def SelectionChanged():
 	annotations = dataset.GetAnnotations(frameList.CurrentText())
 	frameView.SetControlPoints(annotations)
 
+def ControlPointsChanged(pts):
+	dataset.SetAnnotations(frameList.CurrentText(), pts)
+
+def SaveAnnotation():
+	dataset.SaveAnnotation("emma.tar.gz")
+
 if __name__=="__main__":
 
 	# Get entrypoint through which we control underlying Qt framework
@@ -25,12 +31,18 @@ if __name__=="__main__":
 	layout = QtWidgets.QVBoxLayout()
 	window.setLayout(layout)
 
+	toolbar = QtWidgets.QToolBar()
+	layout.addWidget(toolbar, 0)
+	actionSave = toolbar.addAction("Save")
+	actionSave.triggered.connect(SaveAnnotation)
+
 	frameList = imgframe.FrameList()
 	frameList.selectionChanged.connect(SelectionChanged)
 	frameList.SetFrameNames(dataset.GetFrameNames())
 	layout.addWidget(frameList)
 
 	frameView = imgframe.FrameView()
+	frameView.controlPointsChanged.connect(ControlPointsChanged)
 	layout.addWidget(frameView)
 
 	window.show()

@@ -20,6 +20,8 @@ class FrameList(QtWidgets.QComboBox):
 
 class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 	mousePress = QtCore.Signal(list)
+	mouseMove = QtCore.Signal(list)
+	mouseRelease = QtCore.Signal(list)
 
 	def __init__(self):
 		QtWidgets.QGraphicsScene.__init__(self)
@@ -28,16 +30,27 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 		scenePos = event.scenePos()
 		self.mousePress.emit([scenePos.x(), scenePos.y()])
 
+	def mouseMoveEvent(self, event):
+		scenePos = event.scenePos()
+		self.mouseMove.emit([scenePos.x(), scenePos.y()])
+
+	def mouseReleaseEvent(self, event):
+		scenePos = event.scenePos()
+		self.mouseRelease.emit([scenePos.x(), scenePos.y()])
+
 class FrameView(QtWidgets.QWidget):
 	pointSelected = QtCore.Signal(int)
+	controlPointsChanged = QtCore.Signal(list)
 
 	def __init__(self):
 		QtWidgets.QWidget.__init__(self)
 
-		self.selectedPointIndex = []
-		self.clickedPoint = None
+		self.selectedPointIndex = None
 		self.currentFrame = None
 		self.zoomScale = 1.0
+		self.prevPressPos = None
+		self.dragThreshold = 10.0
+		self.dragActive = False
 
 		self.layout = QtWidgets.QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
@@ -52,6 +65,8 @@ class FrameView(QtWidgets.QWidget):
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
+		self.scene.mouseMove.connect(self.MouseMoveEvent)
+		self.scene.mouseRelease.connect(self.MouseReleaseEvent)
 		self.view = QtWidgets.QGraphicsView(self.scene)
 		self.layout.addWidget(self.view, 1)
 		self.controlPoints = []
@@ -93,26 +108,40 @@ class FrameView(QtWidgets.QWidget):
 		self.DrawFrame()
 
 	def MousePressEvent(self, pos):
-		self.clickedPoint = pos
-		self.DrawFrame()
+		#print "Press", pos
+		self.prevPressPos = pos
 
-		bestDist = None
-		bestInd = None
-		for ptNum, pt in enumerate(self.controlPoints):
-			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
-			dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
-			if bestDist is None or dist < bestDist:
-				bestDist = dist
-				bestInd = ptNum
-		self.pointSelected.emit(bestInd)
-		self.SetSelectedPoint(bestInd)
+	def MouseMoveEvent(self, pos):
+		#print "Move", pos
 
-	def GetClickedPointPos(self):
-		return self.clickedPoint
+		dist = ((self.prevPressPos[0] - pos[0]) ** 2. + (self.prevPressPos[1] - pos[1]) ** 2.) ** 0.5
+		if dist > self.dragThreshold:
+			self.dragActive = True
 
-	def ClearClickedPoint(self):
-		self.clickedPoint = None
-		self.DrawFrame()
+		if self.dragActive:
+			#print "Dragging"
+			if self.selectedPointIndex is not None:
+				spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
+				self.controlPoints[self.selectedPointIndex] = spt
+				self.DrawFrame()
+				self.controlPointsChanged.emit(self.controlPoints)
+
+	def MouseReleaseEvent(self, pos):
+		#print "Release", pos
+		if not self.dragActive:
+			bestDist = None
+			bestInd = None
+			for ptNum, pt in enumerate(self.controlPoints):
+				spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
+				dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
+				if bestDist is None or dist < bestDist:
+					bestDist = dist
+					bestInd = ptNum
+			self.pointSelected.emit(bestInd)
+			self.SetSelectedPoint(bestInd)
+
+		self.prevPressPos = None
+		self.dragActive = False
 
 	def SetFrame(self, frame):
 		self.currentFrame = frame

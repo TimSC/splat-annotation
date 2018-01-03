@@ -1,10 +1,13 @@
 from PySide2 import QtGui, QtWidgets
 import os
+import tarfile
+import io
 
 class DatasetHelen(object):
 	
 	def __init__(self):
 		self.annot = {}
+		self.imgToFilename = {}
 		self._ReadAnnotation()
 
 	def _ReadAnnotation(self):
@@ -26,7 +29,24 @@ class DatasetHelen(object):
 					imagePoints.append(pt)
 
 			self.annot[imageName] = imagePoints
-			#print imageName, self.annot[imageName]
+			self.imgToFilename[imageName] = fina
+
+	def SaveAnnotation(self, fina):
+		outTar = tarfile.open(fina, mode='w:gz')
+
+		for imageName in self.annot:
+
+			outData = io.BytesIO()
+			outData.write(u"{}\n".format(imageName).encode("utf-8"))
+			for pt in self.annot[imageName]:
+				outData.write(u"{} , {}\n".format(pt[0],pt[1]).encode("utf-8"))
+
+			tarInfo = tarfile.TarInfo(self.imgToFilename[imageName])
+			tarInfo.size = len(outData.getvalue())
+			outData.seek(0)
+			outTar.addfile(tarInfo, fileobj=outData)
+
+		outTar.close()
 
 	def GetFrameNames(self):
 		frameNames = list(self.annot.keys())
@@ -40,4 +60,7 @@ class DatasetHelen(object):
 
 	def GetAnnotations(self, name):
 		return self.annot[name]
+
+	def SetAnnotations(self, name, pts):
+		self.annot[name] = pts
 
