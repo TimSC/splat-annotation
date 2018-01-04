@@ -44,7 +44,7 @@ class DatasetHelen(object):
 		for imageName in self.annot:
 
 			outData = io.BytesIO()
-			outData.write(u"{}\n".format(imageName).encode("utf-8"))
+			outData.write(u"{}\n".format(self.nameToImgFina[imageName]).encode("utf-8"))
 			for pt in self.annot[imageName]:
 				outData.write(u"{} , {}\n".format(pt[0],pt[1]).encode("utf-8"))
 
