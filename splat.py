@@ -64,6 +64,7 @@ if __name__=="__main__":
 	frameView.SetLinks(dataset.GetLinks())
 	layout.addWidget(frameView)
 
+	SelectionChanged()
 	window.show()
 
 	# IMPORTANT: `window` variable now contains a reference to a top

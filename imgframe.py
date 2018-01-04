@@ -9,7 +9,7 @@ class FrameList(QtWidgets.QComboBox):
 
 	def SetFrameNames(self, frameNames):
 		self.clear()
-		for fn in frameNames[::-1]:
+		for fn in frameNames:
 			self.addItem(fn)
 
 	def FrameChanged(self, ind = None):

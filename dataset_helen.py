@@ -8,15 +8,18 @@ class DatasetHelen(object):
 	def __init__(self):
 		self.annot = {}
 		self.imgToFilename = {}
+		self.nameToImgFina = {}
 		self._ReadAnnotation()
 
 	def _ReadAnnotation(self):
 
 		self.annot = {}
+		self.imgToFilename = {}
+		self.nameToImgFina = {}
 		#inTar = tarfile.open("/home/tim/Desktop/Helen/annotation.tar.gz", mode='r:gz')
 		inTar = tarfile.open("emma.tar.gz", mode='r:gz')
 
-		for tarInfo in inTar.getmembers():
+		for i, tarInfo in enumerate(inTar.getmembers()):
 
 			fi = inTar.extractfile(tarInfo)
 			if fi is None: continue
@@ -30,8 +33,10 @@ class DatasetHelen(object):
 					pt = map(float, lis.split(","))
 					imagePoints.append(pt)
 
-			self.annot[imageName] = imagePoints
-			self.imgToFilename[imageName] = tarInfo.name
+			imageName2 = "{:04d}: {}".format(i, imageName)
+			self.annot[imageName2] = imagePoints
+			self.imgToFilename[imageName2] = tarInfo.name
+			self.nameToImgFina[imageName2] = imageName
 
 	def SaveAnnotation(self, fina):
 		outTar = tarfile.open(fina, mode='w:gz')
@@ -56,8 +61,9 @@ class DatasetHelen(object):
 		return frameNames
 
 	def GetFrame(self, name):
-		print "/home/tim/Desktop/Helen/imgs/{}.jpg".format(name)
-		reader = QtGui.QImageReader("/home/tim/Desktop/Helen/imgs/{}.jpg".format(name))
+		fina = self.nameToImgFina[name]
+		print "/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina)
+		reader = QtGui.QImageReader("/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina))
 		return reader.read()
 
 	def GetAnnotations(self, name):
