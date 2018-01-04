@@ -7,16 +7,32 @@ import dataset_helen
 
 def SelectionChanged():
 	global frameView, frameList, dataset
-	img = dataset.GetFrame(frameList.CurrentText())
+	img = dataset.GetFrame(frameList.currentText())
 	frameView.SetFrame(img)
-	annotations = dataset.GetAnnotations(frameList.CurrentText())
+	annotations = dataset.GetAnnotations(frameList.currentText())
 	frameView.SetControlPoints(annotations)
 
 def ControlPointsChanged(pts):
-	dataset.SetAnnotations(frameList.CurrentText(), pts)
+	dataset.SetAnnotations(frameList.currentText(), pts)
 
 def SaveAnnotation():
 	dataset.SaveAnnotation("emma.tar.gz")
+
+def NextFrame():
+	global frameView, frameList, dataset
+	ind = frameList.currentIndex() + 1
+	if frameList.count() < 0:
+		ind = frameList.count() - 1
+	frameList.setCurrentIndex(ind)
+	SelectionChanged()
+
+def PrevFrame():
+	global frameView, frameList, dataset
+	ind = frameList.currentIndex() - 1
+	if ind < 0:
+		ind = 0
+	frameList.setCurrentIndex(ind)
+	SelectionChanged()
 
 if __name__=="__main__":
 
@@ -43,6 +59,9 @@ if __name__=="__main__":
 
 	frameView = imgframe.FrameView()
 	frameView.controlPointsChanged.connect(ControlPointsChanged)
+	frameView.nextFrame.connect(NextFrame)
+	frameView.prevFrame.connect(PrevFrame)
+	frameView.SetLinks(dataset.GetLinks())
 	layout.addWidget(frameView)
 
 	window.show()

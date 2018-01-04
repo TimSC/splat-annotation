@@ -12,9 +12,6 @@ class FrameList(QtWidgets.QComboBox):
 		for fn in frameNames[::-1]:
 			self.addItem(fn)
 
-	def CurrentText(self):
-		return self.currentText()
-		
 	def FrameChanged(self, ind = None):
 		self.selectionChanged.emit()
 
@@ -41,6 +38,8 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 class FrameView(QtWidgets.QWidget):
 	pointSelected = QtCore.Signal(int)
 	controlPointsChanged = QtCore.Signal(list)
+	nextFrame = QtCore.Signal()
+	prevFrame = QtCore.Signal()
 
 	def __init__(self):
 		QtWidgets.QWidget.__init__(self)
@@ -51,6 +50,7 @@ class FrameView(QtWidgets.QWidget):
 		self.prevPressPos = None
 		self.dragThreshold = 10.0
 		self.dragActive = False
+		self.links = []
 
 		self.layout = QtWidgets.QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
@@ -87,6 +87,7 @@ class FrameView(QtWidgets.QWidget):
 
 		penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
 		penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
+		penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
 		for ptNum, pt in enumerate(self.controlPoints):
 			currentPen = penWhite
 			if self.selectedPointIndex is not None and ptNum == self.selectedPointIndex:
@@ -95,6 +96,17 @@ class FrameView(QtWidgets.QWidget):
 			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
 			self.scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
 			self.scene.addLine(spt[0], spt[1]-5., spt[0], spt[1]+5., currentPen)
+
+		for l1, l2 in self.links:
+			if l1 >= len(self.controlPoints) or l2 >= len(self.controlPoints):
+				continue
+			#print l1, l2, len(self.controlPoints)
+			for li in range(l1+1, l2+1):
+				pt1 = self.controlPoints[li-1]
+				pt2 = self.controlPoints[li]
+				spt1 = (pt1[0] * self.zoomScale, pt1[1] * self.zoomScale)
+				spt2 = (pt2[0] * self.zoomScale, pt2[1] * self.zoomScale)
+				self.scene.addLine(spt1[0], spt1[1], spt2[0], spt2[1], penWhite)
 
 	def SetControlPoints(self, pts):
 		if pts is None:
@@ -108,18 +120,19 @@ class FrameView(QtWidgets.QWidget):
 		self.DrawFrame()
 
 	def MousePressEvent(self, pos):
-		#print "Press", pos
+
 		self.prevPressPos = pos
 
 	def MouseMoveEvent(self, pos):
-		#print "Move", pos
+
+		if self.prevPressPos is None: return
 
 		dist = ((self.prevPressPos[0] - pos[0]) ** 2. + (self.prevPressPos[1] - pos[1]) ** 2.) ** 0.5
 		if dist > self.dragThreshold:
 			self.dragActive = True
 
 		if self.dragActive:
-			#print "Dragging"
+
 			if self.selectedPointIndex is not None:
 				spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
 				self.controlPoints[self.selectedPointIndex] = spt
@@ -147,6 +160,10 @@ class FrameView(QtWidgets.QWidget):
 		self.currentFrame = frame
 		self.DrawFrame()
 
+	def SetLinks(self, linksIn):
+		self.links = linksIn
+		self.DrawFrame()
+
 	def ZoomIn(self):
 		self.zoomScale *= 1.5
 		self.DrawFrame()
@@ -154,4 +171,14 @@ class FrameView(QtWidgets.QWidget):
 	def ZoomOut(self):
 		self.zoomScale /= 1.5
 		self.DrawFrame()
+
+	def keyPressEvent(self, a):
+		if a.key() == ord("["):
+			self.prevFrame.emit()
+		if a.key() == ord("]"):
+			self.nextFrame.emit()
+		if a.key() == ord("-"):
+			self.ZoomOut()
+		if a.key() in [ord("+"), ord("=")]:
+			self.ZoomIn()
 

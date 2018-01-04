@@ -13,7 +13,8 @@ class DatasetHelen(object):
 	def _ReadAnnotation(self):
 
 		self.annot = {}
-		inTar = tarfile.open("/home/tim/Desktop/Helen/annotation.tar.gz", mode='r:gz')
+		#inTar = tarfile.open("/home/tim/Desktop/Helen/annotation.tar.gz", mode='r:gz')
+		inTar = tarfile.open("emma.tar.gz", mode='r:gz')
 
 		for tarInfo in inTar.getmembers():
 
@@ -64,4 +65,7 @@ class DatasetHelen(object):
 
 	def SetAnnotations(self, name, pts):
 		self.annot[name] = pts
+
+	def GetLinks(self):
+		return [(194, 200)]
 
