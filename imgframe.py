@@ -36,7 +36,6 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 		self.mouseRelease.emit([scenePos.x(), scenePos.y()])
 
 class FrameView(QtWidgets.QWidget):
-	pointSelected = QtCore.Signal(int)
 	controlPointsChanged = QtCore.Signal(list)
 	nextFrame = QtCore.Signal()
 	prevFrame = QtCore.Signal()
@@ -122,6 +121,17 @@ class FrameView(QtWidgets.QWidget):
 	def MousePressEvent(self, pos):
 
 		self.prevPressPos = pos
+		self.dragActive = False
+
+		bestDist = None
+		bestInd = None
+		for ptNum, pt in enumerate(self.controlPoints):
+			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
+			dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
+			if bestDist is None or dist < bestDist:
+				bestDist = dist
+				bestInd = ptNum
+		self.SetSelectedPoint(bestInd)
 
 	def MouseMoveEvent(self, pos):
 
@@ -134,6 +144,7 @@ class FrameView(QtWidgets.QWidget):
 		if self.dragActive:
 
 			if self.selectedPointIndex is not None:
+
 				spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
 				self.controlPoints[self.selectedPointIndex] = spt
 				self.DrawFrame()
@@ -141,17 +152,6 @@ class FrameView(QtWidgets.QWidget):
 
 	def MouseReleaseEvent(self, pos):
 		#print "Release", pos
-		if not self.dragActive:
-			bestDist = None
-			bestInd = None
-			for ptNum, pt in enumerate(self.controlPoints):
-				spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
-				dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
-				if bestDist is None or dist < bestDist:
-					bestDist = dist
-					bestInd = ptNum
-			self.pointSelected.emit(bestInd)
-			self.SetSelectedPoint(bestInd)
 
 		self.prevPressPos = None
 		self.dragActive = False
