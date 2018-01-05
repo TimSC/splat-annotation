@@ -37,6 +37,7 @@ class DatasetHelen(object):
 		self.annot = {}
 		self.imgToFilename = {}
 		self.nameToImgFina = {}
+		self.imgNames = []
 		#inTar = tarfile.open("/home/tim/Desktop/Helen/annotation.tar.gz", mode='r:gz')
 		inTar = tarfile.open("emma.tar.gz", mode='r:gz')
 
@@ -58,11 +59,12 @@ class DatasetHelen(object):
 			self.annot[imageName2] = imagePoints
 			self.imgToFilename[imageName2] = tarInfo.name
 			self.nameToImgFina[imageName2] = imageName
+			self.imgNames.append(imageName2)
 
 	def SaveAnnotation(self, fina):
 		outTar = tarfile.open(fina, mode='w:gz')
 
-		for imageName in self.annot:
+		for imageName in self.imgNames:
 
 			outData = io.BytesIO()
 			outData.write(u"{}\n".format(self.nameToImgFina[imageName]).encode("utf-8"))
@@ -77,9 +79,7 @@ class DatasetHelen(object):
 		outTar.close()
 
 	def GetFrameNames(self):
-		frameNames = list(self.annot.keys())
-		frameNames.sort()
-		return frameNames
+		return self.imgNames
 
 	def GetFrame(self, name):
 		fina = self.nameToImgFina[name]
