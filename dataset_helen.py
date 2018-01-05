@@ -10,6 +10,27 @@ class DatasetHelen(object):
 		self.imgToFilename = {}
 		self.nameToImgFina = {}
 		self._ReadAnnotation()
+		self.reversed = False
+		self.links = (range(0, 41), #Chin
+			range(41, 58), #Nose
+			range(58, 72), #Upper outer lip
+			range(72, 86), #Lower outer lip
+			range(86, 101), #Upper inner lip
+			range(101, 114), #Lower inner lip
+			range(114, 126), #Their left eye, upper
+			range(126, 134), #Their left eye, lower
+			range(134, 146), #Their right eye, upper
+			range(146, 154), #Their right eye, lower
+			range(154, 165), #Their left eyebrow, upper
+			range(165, 174), #Their left eyebrow, lower
+			range(174, 185), #Their right eyebrow, upper
+			range(185, 194), #Their right eyebrow, lower
+			range(194, 201), #Hair
+			)
+		assert len(self.links[6]) == len(self.links[8])
+		assert len(self.links[7]) == len(self.links[9])
+		assert len(self.links[10]) == len(self.links[12])
+		assert len(self.links[11]) == len(self.links[13])
 
 	def _ReadAnnotation(self):
 
@@ -64,14 +85,62 @@ class DatasetHelen(object):
 		fina = self.nameToImgFina[name]
 		print "/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina)
 		reader = QtGui.QImageReader("/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina))
+		if self.reversed:
+			img = reader.read()
+			return img.mirrored(True, False)
 		return reader.read()
 
+	def FlipPointsHorizontal(self, originalPts, width):
+
+		pts=[]
+		ptsReversed = reversed([originalPts[i] for i in self.links[0]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = reversed([originalPts[i] for i in self.links[1]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = reversed([originalPts[i] for i in self.links[2]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = reversed([originalPts[i] for i in self.links[3]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = reversed([originalPts[i] for i in self.links[4]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = reversed([originalPts[i] for i in self.links[5]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[8]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[9]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[6]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[7]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[12]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[13]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[10]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = [originalPts[i] for i in self.links[11]]
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+		ptsReversed = reversed([originalPts[i] for i in self.links[14]])
+		pts.extend([(width-pt[0], pt[1]) for pt in ptsReversed])
+
+		assert len(pts) == len(originalPts)
+		return pts
+
 	def GetAnnotations(self, name):
-		return self.annot[name]
+		if not self.reversed:
+			return self.annot[name]
+		else:
+			img = self.GetFrame(name)
+			w = img.size().width()
+			return self.FlipPointsHorizontal(self.annot[name], w)
 
 	def SetAnnotations(self, name, pts):
-		self.annot[name] = pts
+		if not self.reversed:
+			self.annot[name] = pts
+		else:
+			pass
 
 	def GetLinks(self):
-		return [(194, 200)]
+		return self.links
 

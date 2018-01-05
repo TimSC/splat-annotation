@@ -96,16 +96,18 @@ class FrameView(QtWidgets.QWidget):
 			self.scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
 			self.scene.addLine(spt[0], spt[1]-5., spt[0], spt[1]+5., currentPen)
 
-		for l1, l2 in self.links:
-			if l1 >= len(self.controlPoints) or l2 >= len(self.controlPoints):
-				continue
-			#print l1, l2, len(self.controlPoints)
-			for li in range(l1+1, l2+1):
-				pt1 = self.controlPoints[li-1]
-				pt2 = self.controlPoints[li]
-				spt1 = (pt1[0] * self.zoomScale, pt1[1] * self.zoomScale)
-				spt2 = (pt2[0] * self.zoomScale, pt2[1] * self.zoomScale)
-				self.scene.addLine(spt1[0], spt1[1], spt2[0], spt2[1], penWhite)
+		if len(self.controlPoints) > 0:
+			for indexList in self.links:
+				indexList = list(indexList)
+				l = len(indexList)
+
+				#print l1, l2, len(self.controlPoints)
+				for li in range(1, l):
+					pt1 = self.controlPoints[indexList[li-1]]
+					pt2 = self.controlPoints[indexList[li]]
+					spt1 = (pt1[0] * self.zoomScale, pt1[1] * self.zoomScale)
+					spt2 = (pt2[0] * self.zoomScale, pt2[1] * self.zoomScale)
+					self.scene.addLine(spt1[0], spt1[1], spt2[0], spt2[1], penWhite)
 
 	def SetControlPoints(self, pts):
 		if pts is None:
@@ -131,6 +133,7 @@ class FrameView(QtWidgets.QWidget):
 			if bestDist is None or dist < bestDist:
 				bestDist = dist
 				bestInd = ptNum
+		print bestInd
 		self.SetSelectedPoint(bestInd)
 
 	def MouseMoveEvent(self, pos):
