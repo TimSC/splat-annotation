@@ -2,9 +2,25 @@ import dataset_helen
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import linalg
+from scipy import optimize 
 
 def Dist(pt1, pt2):
 	return ((pt1[0]-pt2[0])**2.0 + (pt1[1]-pt2[1])**2.0) ** 0.5
+
+def func(x, centred, hairCentred, Vh, s):
+	#print (centred.shape, hairCentred.shape)
+	x1 = x.reshape((14, 24))
+	totalErr = []
+
+	for i in range(centred.shape[0]):
+		eigenVals = (np.dot(Vh, centred[i,:])[:len(s)] / s)
+		#print "evals3", eigenVals
+		pred = np.dot(x1, eigenVals)
+		err = np.abs(hairCentred[i,:] - pred)
+		totalErr.extend(err)
+
+	totalErr = np.array(totalErr)
+	return totalErr
 
 if __name__=="__main__":
 
@@ -18,11 +34,14 @@ if __name__=="__main__":
 	for frameName in dataset.GetFrameNames():
 		pts = dataset.GetAnnotations(frameName)
 
+		pts2 = [pts[0], pts[20], pts[40], pts[41], pts[49], pts[57], pts[58], pts[72],
+			pts[145], pts[153], pts[125], pts[133]]
+
 		if Dist(pts[194], (10.0, 10.0)) > 1e-4:
 			count += 1
 			#print frameName, pts[194:200]
-			xpts.append([pt[0] for pt in pts[:194]])
-			ypts.append([pt[1] for pt in pts[:194]])
+			xpts.append([pt[0] for pt in pts2])
+			ypts.append([pt[1] for pt in pts2])
 
 			hairXpts.append([pt[0] for pt in pts[194:]])
 			hairYpts.append([pt[1] for pt in pts[194:]])
@@ -57,6 +76,8 @@ if __name__=="__main__":
 	#plt.plot(centred[0,:194], centred[0,194:])
 	#plt.show()
 
+	print centred.shape
+
 	U, s, Vh = linalg.svd(centred)
 
 	print U.shape, s.shape, Vh.shape
@@ -69,17 +90,47 @@ if __name__=="__main__":
 		#a1 = np.dot(U, np.dot(sigma, Vh))
 		#print np.allclose(centred, a1)
 
-	shp = np.dot(U[15,:], np.dot(sigma, Vh))
-	print U[15,:][:20]
+	faceIndex = 26
+	shp = np.dot(U[faceIndex,:], np.dot(sigma, Vh))
+	print "evals1", U[faceIndex,:][:len(s)]
 
 	if 0:
 		plt.plot(shp[:194], shp[194:])
 		plt.show()
 
-	eigenVals = (np.dot(Vh, shp)[:332] / s)[:20]
+	eigenVals = (np.dot(Vh, shp)[:len(s)] / s)
+	print "evals2", eigenVals
+
+	eigenVals = (np.dot(Vh, centred[faceIndex,:])[:len(s)] / s)
+	print "evals3", eigenVals
+
+	print centred.shape, hairCentred.shape, U.shape
+
+	x0 = np.ones((24*14))
+	x, ier = optimize.leastsq(func, x0, args=(centred, hairCentred, Vh, s))
+	x1 = x.reshape((14, 24))
+
+	eigenVals = (np.dot(Vh, centred[faceIndex,:])[:len(s)] / s)
+	pred = np.dot(x1, eigenVals)
+
+	print pred
+	print hairCentred[faceIndex,:]
 
 	if 1:
-		plt.plot(centred[15,:][:194], centred[15,:][194:])
-		plt.plot(hairCentred[15,:][:7], hairCentred[15,:][7:])
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
+		ax.set_aspect('equal')
+		ax.plot(centred[faceIndex,:][:12], -centred[faceIndex,:][12:], 'x')
+		ax.plot(pred[:7], -pred[7:])
 		plt.show()
+
+
+	#Estimated hair shape = hair model * face eigenvals
+	#
+
+	#hairModel = np.linalg.pinv(np.dot(U, hairCentred))
+	
+	#hairShp = np.dot(hairModel, U[faceIndex,:]).transpose()
+	#print hairShp
+	#print hairCentred[faceIndex,:]
 
