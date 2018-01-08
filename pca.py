@@ -12,6 +12,7 @@ if __name__=="__main__":
 	count = 0
 	xpts = []
 	ypts = []
+	hairXpts, hairYpts = [], []
 
 	#Centre the features
 	for frameName in dataset.GetFrameNames():
@@ -22,11 +23,18 @@ if __name__=="__main__":
 			#print frameName, pts[194:200]
 			xpts.append([pt[0] for pt in pts[:194]])
 			ypts.append([pt[1] for pt in pts[:194]])
+
+			hairXpts.append([pt[0] for pt in pts[194:]])
+			hairYpts.append([pt[1] for pt in pts[194:]])
+
 			
 	print "Hair frames marked", count
 
 	xpts = np.array(xpts)
 	ypts = np.array(ypts)
+
+	hairXpts = np.array(hairXpts)
+	hairYpts = np.array(hairYpts)
 
 	xCentrePos = np.array([np.mean(xpts, axis=1)] * xpts.shape[1]).transpose()
 	yCentrePos = np.array([np.mean(ypts, axis=1)] * ypts.shape[1]).transpose()
@@ -34,10 +42,17 @@ if __name__=="__main__":
 	xptsCentred = xpts - xCentrePos
 	yptsCentred = ypts - yCentrePos
 
+	hairxCentrePos = np.array([np.mean(xpts, axis=1)] * hairXpts.shape[1]).transpose()
+	hairyCentrePos = np.array([np.mean(ypts, axis=1)] * hairYpts.shape[1]).transpose()
+
+	hairXptsCentred = hairXpts - hairxCentrePos
+	hairYptsCentred = hairYpts - hairyCentrePos
+
 	#plt.plot(xptsCentred[0,:], yptsCentred[0,:])
 	#plt.show()
 
 	centred = np.hstack((xptsCentred, yptsCentred))
+	hairCentred = np.hstack((hairXptsCentred, hairYptsCentred))
 
 	#plt.plot(centred[0,:194], centred[0,194:])
 	#plt.show()
@@ -45,6 +60,7 @@ if __name__=="__main__":
 	U, s, Vh = linalg.svd(centred)
 
 	print U.shape, s.shape, Vh.shape
+
 
 	if 1:
 		sigma = np.zeros(centred.shape)
@@ -54,9 +70,16 @@ if __name__=="__main__":
 		#print np.allclose(centred, a1)
 
 	shp = np.dot(U[15,:], np.dot(sigma, Vh))
+	print U[15,:][:20]
 
-	plt.plot(shp[:194], shp[194:])
-	plt.show()
+	if 0:
+		plt.plot(shp[:194], shp[194:])
+		plt.show()
 
-	#print np.sum(np.dot(Vh[0,:194], Vh[0,194:]))
+	eigenVals = (np.dot(Vh, shp)[:332] / s)[:20]
+
+	if 1:
+		plt.plot(centred[15,:][:194], centred[15,:][194:])
+		plt.plot(hairCentred[15,:][:7], hairCentred[15,:][7:])
+		plt.show()
 
