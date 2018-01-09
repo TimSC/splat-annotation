@@ -39,7 +39,7 @@ class DatasetHelen(object):
 		self.nameToImgFina = {}
 		self.imgNames = []
 		#inTar = tarfile.open("/home/tim/Desktop/Helen/annotation.tar.gz", mode='r:gz')
-		inTar = tarfile.open("emma.tar.gz", mode='r:gz')
+		inTar = tarfile.open("helentop.tar.gz", mode='r:gz')
 
 		for i, tarInfo in enumerate(inTar.getmembers()):
 

@@ -16,7 +16,7 @@ def ControlPointsChanged(pts):
 	dataset.SetAnnotations(frameList.currentText(), pts)
 
 def SaveAnnotation():
-	dataset.SaveAnnotation("emma.tar.gz")
+	dataset.SaveAnnotation("helentop.tar.gz")
 
 def NextFrame():
 	global frameView, frameList, dataset

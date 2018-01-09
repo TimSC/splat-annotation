@@ -1,6 +1,7 @@
 import dataset_helen
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 from scipy import linalg
 from scipy import optimize 
 
@@ -29,6 +30,7 @@ if __name__=="__main__":
 	xpts = []
 	ypts = []
 	hairXpts, hairYpts = [], []
+	filteredFrameNames = []
 
 	#Centre the features
 	for frameName in dataset.GetFrameNames():
@@ -46,6 +48,8 @@ if __name__=="__main__":
 			hairXpts.append([pt[0] for pt in pts[194:]])
 			hairYpts.append([pt[1] for pt in pts[194:]])
 
+			filteredFrameNames.append(frameName)
+
 			
 	print "Hair frames marked", count
 
@@ -55,17 +59,20 @@ if __name__=="__main__":
 	hairXpts = np.array(hairXpts)
 	hairYpts = np.array(hairYpts)
 
-	xCentrePos = np.array([np.mean(xpts, axis=1)] * xpts.shape[1]).transpose()
-	yCentrePos = np.array([np.mean(ypts, axis=1)] * ypts.shape[1]).transpose()
+	xCentrePos = np.mean(xpts, axis=1)
+	yCentrePos = np.mean(ypts, axis=1)
 
-	xptsCentred = xpts - xCentrePos
-	yptsCentred = ypts - yCentrePos
+	xCentrePos2 = np.array([xCentrePos] * xpts.shape[1]).transpose()
+	yCentrePos2 = np.array([yCentrePos] * ypts.shape[1]).transpose()
 
-	hairxCentrePos = np.array([np.mean(xpts, axis=1)] * hairXpts.shape[1]).transpose()
-	hairyCentrePos = np.array([np.mean(ypts, axis=1)] * hairYpts.shape[1]).transpose()
+	xptsCentred = xpts - xCentrePos2
+	yptsCentred = ypts - yCentrePos2
 
-	hairXptsCentred = hairXpts - hairxCentrePos
-	hairYptsCentred = hairYpts - hairyCentrePos
+	hairxCentrePos2 = np.array([xCentrePos] * hairXpts.shape[1]).transpose()
+	hairyCentrePos2 = np.array([yCentrePos] * hairYpts.shape[1]).transpose()
+
+	hairXptsCentred = hairXpts - hairxCentrePos2
+	hairYptsCentred = hairYpts - hairyCentrePos2
 
 	#plt.plot(xptsCentred[0,:], yptsCentred[0,:])
 	#plt.show()
@@ -90,7 +97,9 @@ if __name__=="__main__":
 		#a1 = np.dot(U, np.dot(sigma, Vh))
 		#print np.allclose(centred, a1)
 
-	faceIndex = 26
+	faceIndex = 22
+	centrePos = (xCentrePos[faceIndex], yCentrePos[faceIndex])
+	print "centrePos", centrePos
 	shp = np.dot(U[faceIndex,:], np.dot(sigma, Vh))
 	print "evals1", U[faceIndex,:][:len(s)]
 
@@ -117,11 +126,14 @@ if __name__=="__main__":
 	print hairCentred[faceIndex,:]
 
 	if 1:
+		img=mpimg.imread("/home/tim/Desktop/Helen/imgs/{}.jpg".format(dataset.nameToImgFina[filteredFrameNames[faceIndex]]))
+
 		fig = plt.figure()
 		ax = fig.add_subplot(111)
 		ax.set_aspect('equal')
-		ax.plot(centred[faceIndex,:][:12], -centred[faceIndex,:][12:], 'x')
-		ax.plot(pred[:7], -pred[7:])
+		ax.imshow(img)
+		ax.plot(centred[faceIndex,:][:12]+centrePos[0], centred[faceIndex,:][12:]+centrePos[1], 'x')
+		ax.plot(pred[:7]+centrePos[0], pred[7:]+centrePos[1])
 		plt.show()
 
 
