@@ -135,7 +135,7 @@ class DatasetHelen(object):
 			w = img.size().width()
 			return self.FlipPointsHorizontal(self.annot[name], w)
 
-	def SetAnnotations(self, name, pts):
+	def SetAnnotation(self, name, pts):
 		if not self.reversed:
 			self.annot[name] = pts
 		else:

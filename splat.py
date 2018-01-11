@@ -4,6 +4,7 @@ from PySide2 import QtGui, QtWidgets
 import imgframe
 import os
 import dataset_helen
+import dataset_obdo
 
 def SelectionChanged():
 	global frameView, frameList, dataset
@@ -13,10 +14,10 @@ def SelectionChanged():
 	frameView.SetControlPoints(annotations)
 
 def ControlPointsChanged(pts):
-	dataset.SetAnnotations(frameList.currentText(), pts)
+	dataset.SetAnnotation(frameList.currentText(), pts)
 
 def SaveAnnotation():
-	dataset.SaveAnnotation("helentop.tar.gz")
+	dataset.SaveAnnotation()
 
 def NextFrame():
 	global frameView, frameList, dataset
@@ -39,7 +40,8 @@ if __name__=="__main__":
 	# Get entrypoint through which we control underlying Qt framework
 	app = QtWidgets.QApplication([])
 
-	dataset = dataset_helen.DatasetHelen()
+	#dataset = dataset_helen.DatasetHelen()
+	dataset = dataset_obdo.DatasetObdo()
 
 	# Qt automatically creates top level application window if you
 	# instruct it to show() any GUI element

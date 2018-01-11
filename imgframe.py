@@ -103,6 +103,10 @@ class FrameView(QtWidgets.QWidget):
 
 				#print l1, l2, len(self.controlPoints)
 				for li in range(1, l):
+					if indexList[li] >= len(self.controlPoints) or \
+						indexList[li-1] >= len(self.controlPoints):
+						print "Link range outside of available points", len(self.controlPoints)
+						continue
 					pt1 = self.controlPoints[indexList[li-1]]
 					pt2 = self.controlPoints[indexList[li]]
 					spt1 = (pt1[0] * self.zoomScale, pt1[1] * self.zoomScale)
