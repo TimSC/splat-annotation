@@ -101,11 +101,11 @@ class FrameView(QtWidgets.QWidget):
 				indexList = list(indexList)
 				l = len(indexList)
 
-				#print l1, l2, len(self.controlPoints)
+				#print (l1, l2, len(self.controlPoints))
 				for li in range(1, l):
 					if indexList[li] >= len(self.controlPoints) or \
 						indexList[li-1] >= len(self.controlPoints):
-						print "Link range outside of available points", len(self.controlPoints)
+						print ("Link range outside of available points", len(self.controlPoints))
 						continue
 					pt1 = self.controlPoints[indexList[li-1]]
 					pt2 = self.controlPoints[indexList[li]]
@@ -137,7 +137,7 @@ class FrameView(QtWidgets.QWidget):
 			if bestDist is None or dist < bestDist:
 				bestDist = dist
 				bestInd = ptNum
-		print bestInd
+		print (bestInd)
 		self.SetSelectedPoint(bestInd)
 
 	def MouseMoveEvent(self, pos):
@@ -158,7 +158,7 @@ class FrameView(QtWidgets.QWidget):
 				self.controlPointsChanged.emit(self.controlPoints)
 
 	def MouseReleaseEvent(self, pos):
-		#print "Release", pos
+		#print ("Release", pos)
 
 		self.prevPressPos = None
 		self.dragActive = False

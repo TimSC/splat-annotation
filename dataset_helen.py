@@ -83,7 +83,7 @@ class DatasetHelen(object):
 
 	def GetFrame(self, name):
 		fina = self.nameToImgFina[name]
-		print "/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina)
+		print ("/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina))
 		reader = QtGui.QImageReader("/home/tim/Desktop/Helen/imgs/{}.jpg".format(fina))
 		if self.reversed:
 			img = reader.read()

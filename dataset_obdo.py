@@ -48,7 +48,7 @@ class DatasetObdo(object):
 	def SaveAnnotation(self, fina=None):
 		if fina is None:
 			fina = self.defaultAnnotationFiNa
-		print fina
+		print (fina)
 		outTar = tarfile.open(fina, mode='w:gz')
 
 		for imageName in self.imgNames:
