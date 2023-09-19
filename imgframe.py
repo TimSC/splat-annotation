@@ -1,20 +1,5 @@
 from PySide2 import QtGui, QtWidgets, QtCore
 
-class FrameList(QtWidgets.QComboBox):
-	selectionChanged = QtCore.Signal()
-
-	def __init__(self):
-		QtWidgets.QComboBox.__init__(self)
-		QtCore.QObject.connect(self, QtCore.SIGNAL('activated(int)'), self.FrameChanged)
-
-	def SetFrameNames(self, frameNames):
-		self.clear()
-		for fn in frameNames:
-			self.addItem(fn)
-
-	def FrameChanged(self, ind = None):
-		self.selectionChanged.emit()
-
 class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 	mousePress = QtCore.Signal(list)
 	mouseMove = QtCore.Signal(list)

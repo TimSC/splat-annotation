@@ -3,36 +3,38 @@
 from PySide2 import QtGui, QtWidgets
 import imgframe
 import os
-import dataset_helen
-import dataset_obdo
+import dataset_imageseq
+
+currentIndex = None
+frameList = []
 
 def SelectionChanged():
-	global frameView, frameList, dataset
-	img = dataset.GetFrame(frameList.currentText())
+	global frameView, frameList, currentIndex, dataset
+	img = dataset.GetFrame(frameList[currentIndex])
 	frameView.SetFrame(img)
-	annotations = dataset.GetAnnotations(frameList.currentText())
+	annotations = dataset.GetAnnotations(frameList[currentIndex])
 	frameView.SetControlPoints(annotations)
 
 def ControlPointsChanged(pts):
-	dataset.SetAnnotation(frameList.currentText(), pts)
+	dataset.SetAnnotation(frameList[currentIndex], pts)
 
 def SaveAnnotation():
 	dataset.SaveAnnotation()
 
 def NextFrame():
-	global frameView, frameList, dataset
-	ind = frameList.currentIndex() + 1
-	if frameList.count() < 0:
-		ind = frameList.count() - 1
-	frameList.setCurrentIndex(ind)
+	global frameView, frameList, currentIndex, dataset
+	ind = currentIndex + 1
+	if len(frameList) < 0:
+		ind = len(frameList) - 1
+	currentIndex = ind
 	SelectionChanged()
 
 def PrevFrame():
-	global frameView, frameList, dataset
-	ind = frameList.currentIndex() - 1
+	global frameView, frameList, currentIndex, dataset
+	ind = currentIndex - 1
 	if ind < 0:
 		ind = 0
-	frameList.setCurrentIndex(ind)
+	currentIndex = ind
 	SelectionChanged()
 
 if __name__=="__main__":
@@ -40,8 +42,8 @@ if __name__=="__main__":
 	# Get entrypoint through which we control underlying Qt framework
 	app = QtWidgets.QApplication([])
 
-	dataset = dataset_helen.DatasetHelen()
-	#dataset = dataset_obdo.DatasetObdo()
+	#dataset = dataset_helen.DatasetHelen()
+	dataset = dataset_imageseq.Dataset()
 
 	# Qt automatically creates top level application window if you
 	# instruct it to show() any GUI element
@@ -54,10 +56,8 @@ if __name__=="__main__":
 	actionSave = toolbar.addAction("Save")
 	actionSave.triggered.connect(SaveAnnotation)
 
-	frameList = imgframe.FrameList()
-	frameList.selectionChanged.connect(SelectionChanged)
-	frameList.SetFrameNames(dataset.GetFrameNames())
-	layout.addWidget(frameList)
+	frameList = dataset.GetFrameNames()
+	currentIndex = 0
 
 	frameView = imgframe.FrameView()
 	frameView.controlPointsChanged.connect(ControlPointsChanged)
