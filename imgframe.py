@@ -85,6 +85,12 @@ class FrameView(QtWidgets.QWidget):
 		self.scene.mouseRelease.connect(self.MouseReleaseEvent)
 		self.view = QtWidgets.QGraphicsView(self.scene)
 		self.layout.addWidget(self.view, 1)
+
+		self.penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
+		self.penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
+		self.penGreen = QtGui.QPen(QtCore.Qt.green, 1.0, QtCore.Qt.SolidLine)
+		self.penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
+
 		self._SelectionChanged()
 
 	def DrawFrame(self):
@@ -100,17 +106,13 @@ class FrameView(QtWidgets.QWidget):
 
 		gpm = QtWidgets.QGraphicsPixmapItem(pix)
 		self.scene.addItem(gpm)
-
-		penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
-		penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
-		penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
 		
 		annotations = self.annot.GetAnnotations(self.currentIndex)
 
 		for ptId, pt in annotations.items():
-			currentPen = penWhite
+			currentPen = self.penGreen
 			if self.selectedPointId is not None and ptId == self.selectedPointId:
-				currentPen = penRed
+				currentPen = self.penRed
 
 			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
 			self.scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
