@@ -1,4 +1,7 @@
 from PySide2 import QtGui, QtWidgets, QtCore
+import annotation
+import dataset_imageseq
+import os
 
 class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 	mousePress = QtCore.Signal(list)
@@ -21,20 +24,24 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 		self.mouseRelease.emit([scenePos.x(), scenePos.y()])
 
 class FrameView(QtWidgets.QWidget):
-	controlPointsChanged = QtCore.Signal(list)
-	nextFrame = QtCore.Signal()
-	prevFrame = QtCore.Signal()
 
 	def __init__(self):
 		QtWidgets.QWidget.__init__(self)
 
-		self.selectedPointIndex = None
+		self.dataset = dataset_imageseq.Dataset()
+		self.frameList = self.dataset.GetFrameNames()
+		self.currentIndex = 0
+
+		self.selectedPointId = None
 		self.currentFrame = None
 		self.zoomScale = 1.0
 		self.prevPressPos = None
 		self.dragThreshold = 10.0
 		self.dragActive = False
-		self.links = []
+		self.toolMode = "select"
+		self.annot = annotation.Annotation(self.frameList)
+		if os.path.exists("annotation.gz"):
+			self.annot.Load("annotation.gz")
 
 		self.layout = QtWidgets.QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
@@ -42,10 +49,29 @@ class FrameView(QtWidgets.QWidget):
 
 		self.toolbar = QtWidgets.QToolBar()
 		self.layout.addWidget(self.toolbar, 0)
+
+		self.actionSave = self.toolbar.addAction("Save")
+		self.actionSave.triggered.connect(self.SaveAnnotation)
+
 		self.actionZoomIn = self.toolbar.addAction("Zoom In")
 		self.actionZoomIn.triggered.connect(self.ZoomIn)
 		self.actionZoomOut = self.toolbar.addAction("Zoom Out")
 		self.actionZoomOut.triggered.connect(self.ZoomOut)
+
+		self.actionSelect = self.toolbar.addAction("Select/Move")
+		self.actionSelect.setCheckable(True)
+		self.actionSelect.setChecked(True)
+		self.actionSelect.triggered.connect(self.Select)
+
+		self.actionAddPoint = self.toolbar.addAction("Add Point")
+		self.actionAddPoint.setCheckable(True)
+		self.actionAddPoint.setChecked(False)
+		self.actionAddPoint.triggered.connect(self.AddPoint)
+
+		self.actionRemovePoint = self.toolbar.addAction("Remove Point")
+		self.actionRemovePoint.setCheckable(True)
+		self.actionRemovePoint.setChecked(False)
+		self.actionRemovePoint.triggered.connect(self.RemovePoint)
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
@@ -53,7 +79,7 @@ class FrameView(QtWidgets.QWidget):
 		self.scene.mouseRelease.connect(self.MouseReleaseEvent)
 		self.view = QtWidgets.QGraphicsView(self.scene)
 		self.layout.addWidget(self.view, 1)
-		self.controlPoints = []
+		self._SelectionChanged()
 
 	def DrawFrame(self):
 		if self.currentFrame is None: return
@@ -72,75 +98,64 @@ class FrameView(QtWidgets.QWidget):
 		penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
 		penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
 		penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
-		for ptNum, pt in enumerate(self.controlPoints):
+		
+		annotations = self.annot.GetAnnotations(self.currentIndex)
+
+		for ptId, pt in annotations.items():
 			currentPen = penWhite
-			if self.selectedPointIndex is not None and ptNum == self.selectedPointIndex:
+			if self.selectedPointId is not None and ptId == self.selectedPointId:
 				currentPen = penRed
 
 			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
 			self.scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
 			self.scene.addLine(spt[0], spt[1]-5., spt[0], spt[1]+5., currentPen)
 
-		if len(self.controlPoints) > 0:
-			for indexList in self.links:
-				indexList = list(indexList)
-				l = len(indexList)
-
-				#print (l1, l2, len(self.controlPoints))
-				for li in range(1, l):
-					if indexList[li] >= len(self.controlPoints) or \
-						indexList[li-1] >= len(self.controlPoints):
-						print ("Link range outside of available points", len(self.controlPoints))
-						continue
-					pt1 = self.controlPoints[indexList[li-1]]
-					pt2 = self.controlPoints[indexList[li]]
-					spt1 = (pt1[0] * self.zoomScale, pt1[1] * self.zoomScale)
-					spt2 = (pt2[0] * self.zoomScale, pt2[1] * self.zoomScale)
-					self.scene.addLine(spt1[0], spt1[1], spt2[0], spt2[1], penWhite)
-
-	def SetControlPoints(self, pts):
-		if pts is None:
-			self.controlPoints = []
-		else:
-			self.controlPoints = pts
-		self.DrawFrame()
-
-	def SetSelectedPoint(self, ptInd):
-		self.selectedPointIndex = ptInd
+	def SetSelectedPoint(self, ptId):
+		self.selectedPointId = ptId
 		self.DrawFrame()
 
 	def MousePressEvent(self, pos):
 
 		self.prevPressPos = pos
 		self.dragActive = False
+		ipt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
 
-		bestDist = None
-		bestInd = None
-		for ptNum, pt in enumerate(self.controlPoints):
-			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
-			dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
-			if bestDist is None or dist < bestDist:
-				bestDist = dist
-				bestInd = ptNum
-		print (bestInd)
-		self.SetSelectedPoint(bestInd)
+		annotations = self.annot.GetAnnotations(self.currentIndex)
+
+		if self.toolMode == "select":
+			bestDist = None
+			bestId = None
+			for ptId, pt in annotations.items():
+				spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
+				dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
+				if bestDist is None or dist < bestDist:
+					bestDist = dist
+					bestId = ptId
+			#print ("bestId", bestId)
+			self.SetSelectedPoint(bestId)
+
+		elif self.toolMode == "add":
+			#print ("add", ipt)
+			ptId = self.annot.AddPoint(self.currentIndex, ipt)
+			self.SetSelectedPoint(ptId)
 
 	def MouseMoveEvent(self, pos):
 
 		if self.prevPressPos is None: return
 
-		dist = ((self.prevPressPos[0] - pos[0]) ** 2. + (self.prevPressPos[1] - pos[1]) ** 2.) ** 0.5
-		if dist > self.dragThreshold:
-			self.dragActive = True
+		if self.toolMode == "select":
 
-		if self.dragActive:
+			dist = ((self.prevPressPos[0] - pos[0]) ** 2. + (self.prevPressPos[1] - pos[1]) ** 2.) ** 0.5
+			if dist > self.dragThreshold:
+				self.dragActive = True
 
-			if self.selectedPointIndex is not None:
+			if self.dragActive:
 
-				spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
-				self.controlPoints[self.selectedPointIndex] = spt
-				self.DrawFrame()
-				self.controlPointsChanged.emit(self.controlPoints)
+				if self.selectedPointId is not None:
+
+					spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
+					self.annot.UpdatePoint(self.currentIndex, self.selectedPointId, spt)
+					self.DrawFrame()
 
 	def MouseReleaseEvent(self, pos):
 		#print ("Release", pos)
@@ -150,10 +165,6 @@ class FrameView(QtWidgets.QWidget):
 
 	def SetFrame(self, frame):
 		self.currentFrame = frame
-		self.DrawFrame()
-
-	def SetLinks(self, linksIn):
-		self.links = linksIn
 		self.DrawFrame()
 
 	def ZoomIn(self):
@@ -166,11 +177,52 @@ class FrameView(QtWidgets.QWidget):
 
 	def keyPressEvent(self, a):
 		if a.key() == ord("["):
-			self.prevFrame.emit()
+			self.PrevFrame()
 		if a.key() == ord("]"):
-			self.nextFrame.emit()
+			self.NextFrame()
 		if a.key() == ord("-"):
 			self.ZoomOut()
 		if a.key() in [ord("+"), ord("=")]:
 			self.ZoomIn()
+
+	def AddPoint(self):
+		self.toolMode = "add"
+		self._UpdateToolButtons()
+
+	def RemovePoint(self):
+		self.toolMode = "remove"
+		self._UpdateToolButtons()
+
+	def Select(self):
+		self.toolMode = "select"
+		self._UpdateToolButtons()
+
+	def _UpdateToolButtons(self):
+		self.actionSelect.setChecked(self.toolMode=="select")
+		self.actionAddPoint.setChecked(self.toolMode=="add")
+		self.actionRemovePoint.setChecked(self.toolMode=="remove")
+
+	def _SelectionChanged(self):
+		img = self.dataset.GetFrame(self.frameList[self.currentIndex])
+		self.SetFrame(img)
+
+	def SaveAnnotation(self):
+		self.annot.SaveAnnotation()
+
+	def NextFrame(self):
+		ind = self.currentIndex + 1
+		if len(self.frameList) < 0:
+			ind = len(self.frameList) - 1
+		self.currentIndex = ind
+		self._SelectionChanged()
+
+	def PrevFrame(self):
+		ind = self.currentIndex - 1
+		if ind < 0:
+			ind = 0
+		self.currentIndex = ind
+		self._SelectionChanged()
+
+	def SaveAnnotation(self):
+		self.annot.Save("annotation.gz")
 
