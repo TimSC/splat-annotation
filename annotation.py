@@ -43,24 +43,36 @@ class Annotation(object):
 		frameName = self.frameList[frameIndex]
 		del self.annot[frameName][ptId]
 
+		if len(self.annot[frameName]) == 0:
+			del self.annot[frameName]
+
 	def UpdatePoint(self, frameIndex, ptId, ptPos):
 
 		frameName = self.frameList[frameIndex]
 		self.annot[frameName][ptId] = ptPos
 	
 	def Propagate(self, frameIndex):
-		#Copy missing points from previous frame
 
-		if frameIndex == 0:
-			return
+		#Rewind to find a frame with annotation
+		cursor = frameIndex - 1
+		prevFrame = None
+		while prevFrame is None:
+			frameName = self.frameList[cursor]
+			if frameName in self.annot:
+				prevFrame = self.annot[frameName]
+				continue
 
-		prevFrame = self.GetAnnotations(frameIndex - 1)
+			if cursor == 0:
+				return False #Can't rewind past beginning
+			cursor -= 1
+
+		#Copy points to current frame
 		self._InitFrameIfNotExist(frameIndex)
 		currentFrame = self.GetAnnotations(frameIndex)
-
 
 		for ptId, pt in prevFrame.items():
 			if ptId not in currentFrame:
 				currentFrame[ptId] = pt
 
+		return True
 

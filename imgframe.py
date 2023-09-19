@@ -25,10 +25,10 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 
 class FrameView(QtWidgets.QWidget):
 
-	def __init__(self):
+	def __init__(self, pth):
 		QtWidgets.QWidget.__init__(self)
 
-		self.dataset = dataset_imageseq.Dataset()
+		self.dataset = dataset_imageseq.Dataset(pth)
 		self.frameList = self.dataset.GetFrameNames()
 		self.currentIndex = 0
 

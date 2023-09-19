@@ -3,27 +3,24 @@
 from PySide2 import QtGui, QtWidgets
 import imgframe
 import os
+import sys
 
 if __name__=="__main__":
 
+	pth = "/media/tim/D21AEC821AEC64C7/datasets/medical/vid1/"
+	if len(sys.argv) > 0:
+		pth = sys.argv[1]
+
 	# Get entrypoint through which we control underlying Qt framework
 	app = QtWidgets.QApplication([])
-
-	#dataset = dataset_helen.DatasetHelen()
 	
-
 	# Qt automatically creates top level application window if you
 	# instruct it to show() any GUI element
 	window = QtWidgets.QWidget()
 	layout = QtWidgets.QVBoxLayout()
 	window.setLayout(layout)
 
-	#toolbar = QtWidgets.QToolBar()
-	#layout.addWidget(toolbar, 0)
-	#actionSave = toolbar.addAction("Save")
-	#actionSave.triggered.connect(SaveAnnotation)
-
-	frameView = imgframe.FrameView()
+	frameView = imgframe.FrameView(pth)
 	layout.addWidget(frameView)
 
 	window.show()

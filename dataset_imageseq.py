@@ -5,10 +5,10 @@ import io
 
 class Dataset(object):
 	
-	def __init__(self):
+	def __init__(self, pth):
 		self.annot = {}
 
-		self.pth = "/media/tim/D21AEC821AEC64C7/datasets/medical/vid1/"
+		self.pth = pth
 		self.imageList = os.listdir(self.pth)
 		self.imageList.sort()
 
