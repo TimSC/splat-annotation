@@ -8,7 +8,7 @@ import sys
 if __name__=="__main__":
 
 	pth = "/media/tim/D21AEC821AEC64C7/datasets/medical/vid1/"
-	if len(sys.argv) > 0:
+	if len(sys.argv) > 1:
 		pth = sys.argv[1]
 
 	# Get entrypoint through which we control underlying Qt framework
