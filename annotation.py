@@ -31,6 +31,10 @@ class Annotation(object):
 		if frameName not in self.annot:
 			self.annot[frameName] = {}
 
+	def FrameHasData(self, frameIndex):
+		frameName = self.frameList[frameIndex]
+		return frameName in self.annot
+
 	def AddPoint(self, frameIndex, pt):
 
 		newId = str(uuid.uuid4())

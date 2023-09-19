@@ -190,10 +190,15 @@ class FrameView(QtWidgets.QWidget):
 		self.DrawFrame()
 
 	def keyPressEvent(self, a):
+		#shiftHeld = (a.modifiers() & QtCore.Qt.KeyboardModifier.ShiftModifier != 0)
 		if a.key() == ord("["):
-			self.PrevFrame()
+			self.PrevFrame(False)
 		if a.key() == ord("]"):
-			self.NextFrame()
+			self.NextFrame(False)
+		if a.key() == ord("{"):
+			self.PrevFrame(True)
+		if a.key() == ord("}"):
+			self.NextFrame(True)
 		if a.key() == ord("-"):
 			self.ZoomOut()
 		if a.key() in [ord("+"), ord("=")]:
@@ -228,15 +233,36 @@ class FrameView(QtWidgets.QWidget):
 	def SaveAnnotation(self):
 		self.annot.SaveAnnotation()
 
-	def NextFrame(self):
-		ind = self.currentIndex + 1
-		if len(self.frameList) < 0:
+	def NextFrame(self, onlykeyFrames):
+		if not onlykeyFrames:
+			ind = self.currentIndex + 1
+		else:
+			cursor = self.currentIndex + 1
+			while cursor < len(self.frameList):
+				if self.annot.FrameHasData(cursor):
+					ind = cursor
+					break
+				cursor += 1
+			ind = cursor
+
+		if ind >= len(self.frameList):
 			ind = len(self.frameList) - 1
 		self.currentIndex = ind
 		self._SelectionChanged()
 
-	def PrevFrame(self):
-		ind = self.currentIndex - 1
+	def PrevFrame(self, onlykeyFrames):
+
+		if not onlykeyFrames:
+			ind = self.currentIndex - 1
+		else:
+			cursor = self.currentIndex - 1
+			while cursor >= 0:
+				if self.annot.FrameHasData(cursor):
+					ind = cursor
+					break
+				cursor -= 1
+			ind = cursor
+			
 		if ind < 0:
 			ind = 0
 		self.currentIndex = ind
