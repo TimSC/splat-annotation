@@ -55,10 +55,10 @@ class Annotation(object):
 		frameName = self.frameList[frameIndex]
 		self.annot[frameName][ptId] = ptPos
 	
-	def Propagate(self, frameIndex):
+	def RewindToDataFrame(self, startIndex):
 
 		#Rewind to find a frame with annotation
-		cursor = frameIndex - 1
+		cursor = startIndex - 1
 		prevFrame = None
 		while prevFrame is None:
 			frameName = self.frameList[cursor]
@@ -67,8 +67,16 @@ class Annotation(object):
 				continue
 
 			if cursor == 0:
-				return False #Can't rewind past beginning
+				return None #Can't rewind past beginning
 			cursor -= 1
+		return cursor
+
+	def Propagate(self, frameIndex):
+
+		#Rewind to find a frame with annotation
+		prevIndex = self.RewindToDataFrame(frameIndex)
+		if prevIndex is None: return False
+		prevFrame = self.GetAnnotations(prevIndex)
 
 		#Copy points to current frame
 		self._InitFrameIfNotExist(frameIndex)
@@ -77,6 +85,22 @@ class Annotation(object):
 		for ptId, pt in prevFrame.items():
 			if ptId not in currentFrame:
 				currentFrame[ptId] = pt
+
+		return True
+
+	def PropagatePoint(self, frameIndex, ptId):
+		#Rewind to find a frame with annotation
+		prevIndex = self.RewindToDataFrame(frameIndex)
+		if prevIndex is None: return False
+		prevFrame = self.GetAnnotations(prevIndex)
+
+		#Copy point to current frame
+		if ptId in prevFrame:
+			self._InitFrameIfNotExist(frameIndex)
+			currentFrame = self.GetAnnotations(frameIndex)
+
+			if ptId not in currentFrame:
+				currentFrame[ptId] = prevFrame[ptId]
 
 		return True
 

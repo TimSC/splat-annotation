@@ -73,8 +73,11 @@ class FrameView(QtWidgets.QWidget):
 		self.actionRemovePoint.setChecked(False)
 		self.actionRemovePoint.triggered.connect(self.RemovePoint)
 
-		self.actionPropagate = self.toolbar.addAction("Propagate")
+		self.actionPropagate = self.toolbar.addAction("Propagate All")
 		self.actionPropagate.triggered.connect(self.Propagate)
+
+		self.actionPropagatePoint = self.toolbar.addAction("Propagate Point")
+		self.actionPropagatePoint.triggered.connect(self.PropagatePoint)
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
@@ -219,6 +222,11 @@ class FrameView(QtWidgets.QWidget):
 	def Propagate(self):
 		#Copy missing points from previous frame
 		self.annot.Propagate(self.currentIndex)
+		self.DrawFrame()
+
+	def PropagatePoint(self):
+		#Copy specified point from previous frame
+		self.annot.PropagatePoint(self.currentIndex, self.selectedPointId)
 		self.DrawFrame()
 
 	def _UpdateToolButtons(self):
