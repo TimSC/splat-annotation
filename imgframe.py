@@ -73,6 +73,9 @@ class FrameView(QtWidgets.QWidget):
 		self.actionRemovePoint.setChecked(False)
 		self.actionRemovePoint.triggered.connect(self.RemovePoint)
 
+		self.actionPropagate = self.toolbar.addAction("Propagate")
+		self.actionPropagate.triggered.connect(self.Propagate)
+
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
 		self.scene.mouseMove.connect(self.MouseMoveEvent)
@@ -114,6 +117,17 @@ class FrameView(QtWidgets.QWidget):
 		self.selectedPointId = ptId
 		self.DrawFrame()
 
+	def GetNearestPoint(self, annotations, pos):
+		bestDist = None
+		bestId = None
+		for ptId, pt in annotations.items():
+			spt = (pt[0], pt[1])
+			dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
+			if bestDist is None or dist < bestDist:
+				bestDist = dist
+				bestId = ptId
+		return bestId
+
 	def MousePressEvent(self, pos):
 
 		self.prevPressPos = pos
@@ -123,21 +137,21 @@ class FrameView(QtWidgets.QWidget):
 		annotations = self.annot.GetAnnotations(self.currentIndex)
 
 		if self.toolMode == "select":
-			bestDist = None
-			bestId = None
-			for ptId, pt in annotations.items():
-				spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
-				dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
-				if bestDist is None or dist < bestDist:
-					bestDist = dist
-					bestId = ptId
-			#print ("bestId", bestId)
+			bestId = self.GetNearestPoint(annotations, ipt)
 			self.SetSelectedPoint(bestId)
 
 		elif self.toolMode == "add":
 			#print ("add", ipt)
 			ptId = self.annot.AddPoint(self.currentIndex, ipt)
 			self.SetSelectedPoint(ptId)
+
+		elif self.toolMode == "remove":
+			bestId = self.GetNearestPoint(annotations, ipt)
+			if bestId is None: return
+			if self.selectedPointId == bestId:
+				self.SetSelectedPoint(None)
+			self.annot.RemovePoint(self.currentIndex, bestId)
+			self.DrawFrame()
 
 	def MouseMoveEvent(self, pos):
 
@@ -196,6 +210,11 @@ class FrameView(QtWidgets.QWidget):
 	def Select(self):
 		self.toolMode = "select"
 		self._UpdateToolButtons()
+
+	def Propagate(self):
+		#Copy missing points from previous frame
+		self.annot.Propagate(self.currentIndex)
+		self.DrawFrame()
 
 	def _UpdateToolButtons(self):
 		self.actionSelect.setChecked(self.toolMode=="select")
