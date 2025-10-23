@@ -2,6 +2,7 @@ import os
 import gzip
 import uuid
 import json
+from PySide2 import QtGui, QtWidgets, QtCore
 
 class Annotation(object):
 
@@ -9,12 +10,10 @@ class Annotation(object):
 		self.annot = {}
 		self.frameList = frameList
 
-	def GetAnnotations(self, frameIndex):
-		frameName = self.frameList[frameIndex]
-
-		if frameName in self.annot:
-			return self.annot[frameName]
-		return {}
+		self.penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
+		self.penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
+		self.penGreen = QtGui.QPen(QtCore.Qt.green, 1.0, QtCore.Qt.SolidLine)
+		self.penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
 
 	def Load(self, fina):
 		inFi = gzip.open(fina, mode='rb')
@@ -26,10 +25,33 @@ class Annotation(object):
 		outFi.write(json.dumps(self.annot).encode('utf-8'))
 		del outFi
 
+	def Draw(self, scene, zoomScale, selectedObj, currentIndex):
+		if currentIndex not in self.annot: return
+
+		frameAnnot = self.annot[currentIndex]
+
+		if 'boxes' in frameAnnot:
+			for boxid, box in frameAnnot['boxes'].items():
+				print (box)
+
+				currentPen = self.penGreen
+				if selectedObj is not None and "box:"+boxid == selectedObj:
+					currentPen = self.penRed
+
+				pt1 = (box[0][0] * zoomScale, box[0][1] * zoomScale)
+				pt2 = (box[1][0] * zoomScale, box[1][1] * zoomScale)
+
+				scene.addRect(pt1[0], pt1[1], 
+					pt2[0]-pt1[0], pt2[1]-pt1[1], currentPen)
+
+		#spt = (pt[0] * zoomScale, pt[1] * zoomScale)
+		#scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
+		#scene.addLine(spt[0], spt[1]-5., spt[0], spt[1]+5., currentPen)
+
 	def _InitFrameIfNotExist(self, frameIndex):
 		frameName = self.frameList[frameIndex]
 		if frameName not in self.annot:
-			self.annot[frameName] = {}
+			self.annot[frameName] = {'points': [], 'boxes': []}
 
 	def FrameHasData(self, frameIndex):
 		frameName = self.frameList[frameIndex]
@@ -40,7 +62,7 @@ class Annotation(object):
 		newId = str(uuid.uuid4())
 		self._InitFrameIfNotExist(frameIndex)
 		frameName = self.frameList[frameIndex]
-		self.annot[frameName][newId] = pt
+		self.annot[frameName]['points'][newId] = pt
 		return newId
 
 	def RemovePoint(self, frameIndex, ptId):
@@ -54,7 +76,26 @@ class Annotation(object):
 
 		frameName = self.frameList[frameIndex]
 		self.annot[frameName][ptId] = ptPos
+
+	def AddBox(self, currentIndex, tempCreateBox):
+		print ("add box", tempCreateBox)
+		newId = str(uuid.uuid4())
+		if currentIndex not in self.annot: self.annot[currentIndex] = {}
+		if 'boxes' not in self.annot[currentIndex]: self.annot[currentIndex]['boxes'] = {}
+
+		self.annot[currentIndex]['boxes'][newId] = tempCreateBox[:]
+		return 'box:'+newId
 	
+	def DeleteSelection(self, currentIndex, selectedObj):
+		print ("del", selectedObj)
+		selectedObjSplit = selectedObj.split(":")		
+
+		frameAnnot = self.annot[currentIndex]
+
+		if 'boxes' in frameAnnot:
+			if selectedObjSplit[1] in frameAnnot['boxes']:
+				del frameAnnot['boxes'][selectedObjSplit[1]]
+
 	def RewindToDataFrame(self, startIndex, mustContainPtId=None):
 
 		#Rewind to find a frame with annotation
@@ -71,36 +112,20 @@ class Annotation(object):
 			cursor -= 1
 		return cursor
 
-	def Propagate(self, frameIndex):
+	def GetNearestPoint(self, currentIndex, pos):
 
-		#Rewind to find a frame with annotation
-		prevIndex = self.RewindToDataFrame(frameIndex)
-		if prevIndex is None: return False
-		prevFrame = self.GetAnnotations(prevIndex)
+		frameAnnot = self.annot[currentIndex]
+		bestDist = None
+		bestId = None
 
-		#Copy points to current frame
-		self._InitFrameIfNotExist(frameIndex)
-		currentFrame = self.GetAnnotations(frameIndex)
-
-		for ptId, pt in prevFrame.items():
-			if ptId not in currentFrame:
-				currentFrame[ptId] = pt
-
-		return True
-
-	def PropagatePoint(self, frameIndex, ptId):
-		#Rewind to find a frame with annotation
-		prevIndex = self.RewindToDataFrame(frameIndex, ptId)
-		if prevIndex is None: return False
-		prevFrame = self.GetAnnotations(prevIndex)
-
-		#Copy point to current frame
-		if ptId in prevFrame:
-			self._InitFrameIfNotExist(frameIndex)
-			currentFrame = self.GetAnnotations(frameIndex)
-
-			if ptId not in currentFrame:
-				currentFrame[ptId] = prevFrame[ptId]
-
-		return True
+		if 'boxes' in frameAnnot:
+			for boxid, box in frameAnnot['boxes'].items():
+				print ("b", box)
+				for pt in box:
+					dist = ((pt[0] - pos[0]) ** 2. + (pt[1] - pos[1]) ** 2.) ** 0.5
+					if bestDist is None or dist < bestDist:
+						bestDist = dist
+						bestId = "box:"+boxid
+		
+		return bestId
 

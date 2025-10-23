@@ -10,7 +10,7 @@ import subprocess
 class AppCore:
 	def __init__(self, pth):
 
-		self.basePath = pth #'../projectvigil/projectvigil/Vigil'
+		self.basePath = pth
 
 		self.layout = QtWidgets.QHBoxLayout()
 		
@@ -24,6 +24,7 @@ class AppCore:
 
 		self.listWidget = QtWidgets.QListWidget()
 		self.listWidget.addItems([v[1] for v in self.videoList])
+		self.listWidget.setFixedWidth(165)
 		self.layout.addWidget(self.listWidget)
 
 		self.frameView = imgframe.FrameView(None)
@@ -43,7 +44,7 @@ class AppCore:
 		print (vid_path)
 
 		if os.path.exists(vid_path):
-			cmd = ['ffmpeg', '-i', (vid_path), (os.path.join(self.tmpDir.name, 'vid%05d.jpg'))]
+			cmd = ['ffmpeg', '-i', (vid_path), '-to', '1', (os.path.join(self.tmpDir.name, 'vid%05d.jpg'))]
 		print (cmd)
 		subprocess.run(cmd)
 

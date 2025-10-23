@@ -32,7 +32,8 @@ class FrameView(QtWidgets.QWidget):
 		self.currentIndex = 0
 		self.dataset = None
 
-		self.selectedPointId = None
+		self.selectedObj = None
+		self.tempCreateBox = None
 		self.currentFrame = None
 		self.zoomScale = 1.0
 		self.prevPressPos = None
@@ -63,33 +64,35 @@ class FrameView(QtWidgets.QWidget):
 		self.actionSelect.setChecked(True)
 		self.actionSelect.triggered.connect(self.Select)
 
-		self.actionAddPoint = self.toolbar.addAction("Add Point")
-		self.actionAddPoint.setCheckable(True)
-		self.actionAddPoint.setChecked(False)
-		self.actionAddPoint.triggered.connect(self.AddPoint)
+		#self.actionAddPoint = self.toolbar.addAction("Add Point")
+		#self.actionAddPoint.setCheckable(True)
+		#self.actionAddPoint.setChecked(False)
+		#self.actionAddPoint.triggered.connect(self.AddPoint)
 
-		self.actionRemovePoint = self.toolbar.addAction("Remove Point")
-		self.actionRemovePoint.setCheckable(True)
-		self.actionRemovePoint.setChecked(False)
-		self.actionRemovePoint.triggered.connect(self.RemovePoint)
+		#self.actionRemovePoint = self.toolbar.addAction("Remove Point")
+		#self.actionRemovePoint.setCheckable(True)
+		#self.actionRemovePoint.setChecked(False)
+		#self.actionRemovePoint.triggered.connect(self.RemovePoint)
 
-		self.actionPropagate = self.toolbar.addAction("Propagate All")
-		self.actionPropagate.triggered.connect(self.Propagate)
+		#self.actionPropagate = self.toolbar.addAction("Propagate All")
+		#self.actionPropagate.triggered.connect(self.Propagate)
 
-		self.actionPropagatePoint = self.toolbar.addAction("Propagate Point")
-		self.actionPropagatePoint.triggered.connect(self.PropagatePoint)
+		#self.actionPropagatePoint = self.toolbar.addAction("Propagate Point")
+		#self.actionPropagatePoint.triggered.connect(self.PropagatePoint)
+
+		self.actionAddBox = self.toolbar.addAction("Add Box")
+		self.actionAddBox.setCheckable(True)
+		self.actionAddBox.triggered.connect(self.AddBox)
 
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
 		self.scene.mouseMove.connect(self.MouseMoveEvent)
 		self.scene.mouseRelease.connect(self.MouseReleaseEvent)
 		self.view = QtWidgets.QGraphicsView(self.scene)
+		self.view.setMouseTracking(True)
 		self.layout.addWidget(self.view, 1)
 
 		self.penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
-		self.penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
-		self.penGreen = QtGui.QPen(QtCore.Qt.green, 1.0, QtCore.Qt.SolidLine)
-		self.penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
 
 		self._SelectionChanged()
 
@@ -116,31 +119,15 @@ class FrameView(QtWidgets.QWidget):
 		gpm = QtWidgets.QGraphicsPixmapItem(pix)
 		self.scene.addItem(gpm)
 		
-		annotations = self.annot.GetAnnotations(self.currentIndex)
+		self.annot.Draw(self.scene, self.zoomScale, self.selectedObj, self.currentIndex)
 
-		for ptId, pt in annotations.items():
-			currentPen = self.penGreen
-			if self.selectedPointId is not None and ptId == self.selectedPointId:
-				currentPen = self.penRed
+		if self.toolMode == "addbox" and self.tempCreateBox is not None:
+			self.scene.addRect(self.tempCreateBox[0][0], self.tempCreateBox[0][1], 
+				self.tempCreateBox[1][0]-self.tempCreateBox[0][0], self.tempCreateBox[1][1]-self.tempCreateBox[0][1], self.penWhite)
 
-			spt = (pt[0] * self.zoomScale, pt[1] * self.zoomScale)
-			self.scene.addLine(spt[0]-5., spt[1], spt[0]+5., spt[1], currentPen)
-			self.scene.addLine(spt[0], spt[1]-5., spt[0], spt[1]+5., currentPen)
-
-	def SetSelectedPoint(self, ptId):
-		self.selectedPointId = ptId
+	def SetSelected(self, objId):
+		self.selectedObj = objId
 		self.DrawFrame()
-
-	def GetNearestPoint(self, annotations, pos):
-		bestDist = None
-		bestId = None
-		for ptId, pt in annotations.items():
-			spt = (pt[0], pt[1])
-			dist = ((spt[0] - pos[0]) ** 2. + (spt[1] - pos[1]) ** 2.) ** 0.5
-			if bestDist is None or dist < bestDist:
-				bestDist = dist
-				bestId = ptId
-		return bestId
 
 	def MousePressEvent(self, pos):
 
@@ -148,26 +135,41 @@ class FrameView(QtWidgets.QWidget):
 		self.dragActive = False
 		ipt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
 
-		annotations = self.annot.GetAnnotations(self.currentIndex)
-
 		if self.toolMode == "select":
-			bestId = self.GetNearestPoint(annotations, ipt)
-			self.SetSelectedPoint(bestId)
+			bestId = self.annot.GetNearestPoint(self.currentIndex, ipt)
+			self.SetSelected(bestId)
 
-		elif self.toolMode == "add":
-			#print ("add", ipt)
-			ptId = self.annot.AddPoint(self.currentIndex, ipt)
-			self.SetSelectedPoint(ptId)
+		#elif self.toolMode == "add":
+		#	#print ("add", ipt)
+		#	ptId = self.annot.AddPoint(self.currentIndex, ipt)
+		#	self.SetSelected(ptId)
 
-		elif self.toolMode == "remove":
-			bestId = self.GetNearestPoint(annotations, ipt)
-			if bestId is None: return
-			if self.selectedPointId == bestId:
-				self.SetSelectedPoint(None)
-			self.annot.RemovePoint(self.currentIndex, bestId)
-			self.DrawFrame()
+		#elif self.toolMode == "remove":
+		#	bestId = self.annot.GetNearestPoint(self.currentIndex, ipt)
+		#	if bestId is None: return
+		#	if self.selectedPointId == bestId:
+		#		self.SetSelected(None)
+		#	self.annot.RemovePoint(self.currentIndex, bestId)
+		#	self.DrawFrame()
+
+		elif self.toolMode == "addbox":
+			if self.tempCreateBox is None:
+				self.tempCreateBox = [ipt, None]
+			else:
+				self.annot.AddBox(self.currentIndex, self.tempCreateBox)
+				self.tempCreateBox = None
+				self.DrawFrame()
+
+			#ptId = self.annot.AddPoint(self.currentIndex, ipt)
+			#self.SetSelected(ptId)
 
 	def MouseMoveEvent(self, pos):
+
+		if self.toolMode == "addbox" and self.tempCreateBox is not None:
+			# Show box creation
+			spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
+			self.tempCreateBox[1] = spt
+			self.DrawFrame()
 
 		if self.prevPressPos is None: return
 
@@ -178,12 +180,13 @@ class FrameView(QtWidgets.QWidget):
 				self.dragActive = True
 
 			if self.dragActive:
+				pass
+				#if self.selectedObj is not None:
 
-				if self.selectedPointId is not None:
+				#	spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
+				#	self.annot.UpdatePoint(self.currentIndex, self.selectedPointId, spt)
+				#	self.DrawFrame()
 
-					spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
-					self.annot.UpdatePoint(self.currentIndex, self.selectedPointId, spt)
-					self.DrawFrame()
 
 	def MouseReleaseEvent(self, pos):
 		#print ("Release", pos)
@@ -217,33 +220,34 @@ class FrameView(QtWidgets.QWidget):
 			self.ZoomOut()
 		if a.key() in [ord("+"), ord("=")]:
 			self.ZoomIn()
+		if a.key() == QtCore.Qt.Key_Delete:
+			self.DeleteSelection()
 
-	def AddPoint(self):
-		self.toolMode = "add"
-		self._UpdateToolButtons()
+	#def AddPoint(self):
+	#	self.toolMode = "add"
+	#	self._UpdateToolButtons()
 
-	def RemovePoint(self):
-		self.toolMode = "remove"
-		self._UpdateToolButtons()
+	#def RemovePoint(self):
+	#	self.toolMode = "remove"
+	#	self._UpdateToolButtons()
 
 	def Select(self):
 		self.toolMode = "select"
 		self._UpdateToolButtons()
 
-	def Propagate(self):
-		#Copy missing points from previous frame
-		self.annot.Propagate(self.currentIndex)
-		self.DrawFrame()
+	def AddBox(self):
+		self.toolMode = "addbox"
+		self._UpdateToolButtons()
 
-	def PropagatePoint(self):
-		#Copy specified point from previous frame
-		self.annot.PropagatePoint(self.currentIndex, self.selectedPointId)
-		self.DrawFrame()
+	def DeleteSelection(self):
+		self.annot.DeleteSelection(self.currentIndex, self.selectedObj)
+		self.SetSelected(None)
 
 	def _UpdateToolButtons(self):
 		self.actionSelect.setChecked(self.toolMode=="select")
-		self.actionAddPoint.setChecked(self.toolMode=="add")
-		self.actionRemovePoint.setChecked(self.toolMode=="remove")
+		#self.actionAddPoint.setChecked(self.toolMode=="add")
+		#self.actionRemovePoint.setChecked(self.toolMode=="remove")
+		self.actionAddBox.setChecked(self.toolMode=="addbox")
 
 	def _SelectionChanged(self):
 		if self.frameList is not None:
