@@ -28,9 +28,9 @@ class FrameView(QtWidgets.QWidget):
 	def __init__(self, pth):
 		QtWidgets.QWidget.__init__(self)
 
-		self.dataset = dataset_imageseq.Dataset(pth)
-		self.frameList = self.dataset.GetFrameNames()
+		self.frameList = None
 		self.currentIndex = 0
+		self.dataset = None
 
 		self.selectedPointId = None
 		self.currentFrame = None
@@ -40,8 +40,8 @@ class FrameView(QtWidgets.QWidget):
 		self.dragActive = False
 		self.toolMode = "select"
 		self.annot = annotation.Annotation(self.frameList)
-		if os.path.exists("annotation.gz"):
-			self.annot.Load("annotation.gz")
+		#if os.path.exists("annotation.gz"):
+		#	self.annot.Load("annotation.gz")
 
 		self.layout = QtWidgets.QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
@@ -91,6 +91,15 @@ class FrameView(QtWidgets.QWidget):
 		self.penGreen = QtGui.QPen(QtCore.Qt.green, 1.0, QtCore.Qt.SolidLine)
 		self.penBlue = QtGui.QPen(QtCore.Qt.blue, 1.0, QtCore.Qt.SolidLine)
 
+		self._SelectionChanged()
+
+	def SetPath(self, pth):
+		print ("pth", pth)
+		self.dataset = dataset_imageseq.Dataset(pth)
+		self.frameList = self.dataset.GetFrameNames()
+		self.annot = annotation.Annotation(self.frameList)
+
+		self.currentIndex = 0
 		self._SelectionChanged()
 
 	def DrawFrame(self):
@@ -237,8 +246,9 @@ class FrameView(QtWidgets.QWidget):
 		self.actionRemovePoint.setChecked(self.toolMode=="remove")
 
 	def _SelectionChanged(self):
-		img = self.dataset.GetFrame(self.frameList[self.currentIndex])
-		self.SetFrame(img)
+		if self.frameList is not None:
+			img = self.dataset.GetFrame(self.frameList[self.currentIndex])
+			self.SetFrame(img)
 
 	def SaveAnnotation(self):
 		self.annot.SaveAnnotation()

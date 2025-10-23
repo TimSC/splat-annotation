@@ -4,10 +4,54 @@ from PySide2 import QtGui, QtWidgets
 import imgframe
 import os
 import sys
+import tempfile
+import subprocess
+
+class AppCore:
+	def __init__(self, pth):
+
+		self.basePath = pth #'../projectvigil/projectvigil/Vigil'
+
+		self.layout = QtWidgets.QHBoxLayout()
+		
+		self.videoList = []
+		for (root,dirs,files) in os.walk(self.basePath): 
+			for fi in files:
+				#print (root, fi)
+				self.videoList.append((root, fi))
+
+		self.videoList.sort(key=lambda k: k[1])
+
+		self.listWidget = QtWidgets.QListWidget()
+		self.listWidget.addItems([v[1] for v in self.videoList])
+		self.layout.addWidget(self.listWidget)
+
+		self.frameView = imgframe.FrameView(None)
+		self.layout.addWidget(self.frameView)
+
+		self.listWidget.currentItemChanged.connect(self.index_changed)
+
+	def index_changed(self, i): # Not an index, i is a QListWidgetItem
+		r = self.listWidget.row(i)
+		pth, vid = self.videoList[r]
+
+		self.tmpDir = tempfile.TemporaryDirectory()
+		
+		print (pth, vid)
+
+		vid_path = os.path.join(pth, vid)
+		print (vid_path)
+
+		if os.path.exists(vid_path):
+			cmd = ['ffmpeg', '-i', (vid_path), (os.path.join(self.tmpDir.name, 'vid%05d.jpg'))]
+		print (cmd)
+		subprocess.run(cmd)
+
+		self.frameView.SetPath(self.tmpDir.name)
 
 if __name__=="__main__":
 
-	pth = "/media/tim/D21AEC821AEC64C7/datasets/medical/vid1/"
+	pth = "frames/"
 	if len(sys.argv) > 1:
 		pth = sys.argv[1]
 
@@ -17,11 +61,9 @@ if __name__=="__main__":
 	# Qt automatically creates top level application window if you
 	# instruct it to show() any GUI element
 	window = QtWidgets.QWidget()
-	layout = QtWidgets.QVBoxLayout()
-	window.setLayout(layout)
 
-	frameView = imgframe.FrameView(pth)
-	layout.addWidget(frameView)
+	appCore = AppCore(pth)
+	window.setLayout(appCore.layout)
 
 	window.show()
 
