@@ -1,6 +1,7 @@
 from PySide2 import QtGui, QtWidgets, QtCore
 import annotation
 import dataset_imageseq
+import dataset_video
 import os
 
 class MyQGraphicsScene(QtWidgets.QGraphicsScene):
@@ -25,7 +26,7 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 
 class FrameView(QtWidgets.QWidget):
 
-	def __init__(self, pth):
+	def __init__(self):
 		QtWidgets.QWidget.__init__(self)
 
 		self.frameList = None
@@ -40,7 +41,7 @@ class FrameView(QtWidgets.QWidget):
 		self.dragThreshold = 10.0
 		self.dragActive = False
 		self.toolMode = "select"
-		self.annot = annotation.Annotation(self.frameList)
+		self.annot = annotation.Annotation()
 		#if os.path.exists("annotation.gz"):
 		#	self.annot.Load("annotation.gz")
 
@@ -98,9 +99,8 @@ class FrameView(QtWidgets.QWidget):
 
 	def SetPath(self, pth):
 		print ("pth", pth)
-		self.dataset = dataset_imageseq.Dataset(pth)
-		self.frameList = self.dataset.GetFrameNames()
-		self.annot = annotation.Annotation(self.frameList)
+		self.dataset = dataset_video.DatasetVideo(pth)
+		self.annot = annotation.Annotation()
 
 		self.currentIndex = 0
 		self._SelectionChanged()
@@ -250,8 +250,8 @@ class FrameView(QtWidgets.QWidget):
 		self.actionAddBox.setChecked(self.toolMode=="addbox")
 
 	def _SelectionChanged(self):
-		if self.frameList is not None:
-			img = self.dataset.GetFrame(self.frameList[self.currentIndex])
+		if self.dataset is not None:
+			img = self.dataset.GetFrame(self.currentIndex)
 			self.SetFrame(img)
 
 	def SaveAnnotation(self):
@@ -262,15 +262,15 @@ class FrameView(QtWidgets.QWidget):
 			ind = self.currentIndex + 1
 		else:
 			cursor = self.currentIndex + 1
-			while cursor < len(self.frameList):
+			while cursor < self.dataset.NumFrames():
 				if self.annot.FrameHasData(cursor):
 					ind = cursor
 					break
 				cursor += 1
 			ind = cursor
 
-		if ind >= len(self.frameList):
-			ind = len(self.frameList) - 1
+		if ind >= self.dataset.NumFrames():
+			ind = self.dataset.NumFrames() - 1
 		self.currentIndex = ind
 		self._SelectionChanged()
 

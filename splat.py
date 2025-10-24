@@ -17,7 +17,7 @@ class AppCore:
 		self.videoList = []
 		for (root,dirs,files) in os.walk(self.basePath): 
 			for fi in files:
-				#print (root, fi)
+				print (root, fi)
 				self.videoList.append((root, fi))
 
 		self.videoList.sort(key=lambda k: k[1])
@@ -27,7 +27,7 @@ class AppCore:
 		self.listWidget.setFixedWidth(165)
 		self.layout.addWidget(self.listWidget)
 
-		self.frameView = imgframe.FrameView(None)
+		self.frameView = imgframe.FrameView()
 		self.layout.addWidget(self.frameView)
 
 		self.listWidget.currentItemChanged.connect(self.index_changed)
@@ -36,19 +36,7 @@ class AppCore:
 		r = self.listWidget.row(i)
 		pth, vid = self.videoList[r]
 
-		self.tmpDir = tempfile.TemporaryDirectory()
-		
-		print (pth, vid)
-
-		vid_path = os.path.join(pth, vid)
-		print (vid_path)
-
-		if os.path.exists(vid_path):
-			cmd = ['ffmpeg', '-i', (vid_path), '-to', '1', (os.path.join(self.tmpDir.name, 'vid%05d.jpg'))]
-		print (cmd)
-		subprocess.run(cmd)
-
-		self.frameView.SetPath(self.tmpDir.name)
+		self.frameView.SetPath(os.path.join(pth, vid))
 
 if __name__=="__main__":
 
