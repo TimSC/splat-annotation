@@ -154,12 +154,11 @@ class FrameView(QtWidgets.QWidget):
 			if dist > self.dragThreshold:
 				self.dragActive = True
 
-			if self.dragActive:
-				pass
-				#if self.selectedObj is not None:
+			if self.dragActive and self.selectedObj is not None:
 
-				#	spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
-
+				spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
+				self.annot.DragSelection(self.currentIndex, self.selectedObj, spt)
+				self.DrawFrame()
 
 
 	def MouseReleaseEvent(self, pos):
