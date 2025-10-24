@@ -6,8 +6,11 @@ from PySide2 import QtGui, QtWidgets, QtCore
 
 class Annotation:
 
-	def __init__(self):
+	def __init__(self, pth):
 		self.annot = {}
+		self.pth = pth
+		if pth is not None and os.path.exists(pth):
+			self.Load(pth)
 
 		self.penWhite = QtGui.QPen(QtCore.Qt.white, 1.0, QtCore.Qt.SolidLine)
 		self.penRed = QtGui.QPen(QtCore.Qt.red, 1.0, QtCore.Qt.SolidLine)
@@ -20,21 +23,25 @@ class Annotation:
 		self.annot = json.loads(inFi.read().decode('utf-8'))
 
 
-	def Save(self, fina):
+	def Save(self):
 		
-		outFi = gzip.open(fina, mode='wb')
+		#Check folder exists, if not, create
+		dirName = os.path.dirname(self.pth)
+		os.makedirs(dirName, exist_ok=True)
+
+		outFi = gzip.open(self.pth, mode='wb')
 		outFi.write(json.dumps(self.annot).encode('utf-8'))
 		del outFi
 
 
 	def Draw(self, scene, zoomScale, selectedObj, currentIndex):
-		if currentIndex not in self.annot: return
+		cis = str(currentIndex)
+		if cis not in self.annot: return
 
-		frameAnnot = self.annot[currentIndex]
+		frameAnnot = self.annot[cis]
 
 		if 'boxes' in frameAnnot:
 			for boxid, box in frameAnnot['boxes'].items():
-				print (box)
 
 				currentPen = self.penGreen
 				if selectedObj is not None and "box:"+boxid == selectedObj:
@@ -47,12 +54,6 @@ class Annotation:
 					pt2[0]-pt1[0], pt2[1]-pt1[1], currentPen)
 
 
-	def _InitFrameIfNotExist(self, frameIndex):
-		frameName = self.frameList[frameIndex]
-		if frameName not in self.annot:
-			self.annot[frameName] = {'points': [], 'boxes': []}
-
-
 	def FrameHasData(self, frameIndex):
 		frameName = self.frameList[frameIndex]
 		return frameName in self.annot
@@ -61,10 +62,11 @@ class Annotation:
 	def AddBox(self, currentIndex, tempCreateBox):
 		print ("add box", tempCreateBox)
 		newId = str(uuid.uuid4())
-		if currentIndex not in self.annot: self.annot[currentIndex] = {}
-		if 'boxes' not in self.annot[currentIndex]: self.annot[currentIndex]['boxes'] = {}
+		cis = str(currentIndex)
+		if cis not in self.annot: self.annot[cis] = {}
+		if 'boxes' not in self.annot[cis]: self.annot[cis]['boxes'] = {}
 
-		self.annot[currentIndex]['boxes'][newId] = tempCreateBox[:]
+		self.annot[cis]['boxes'][newId] = tempCreateBox[:]
 		return 'box:'+newId
 	
 
@@ -72,8 +74,9 @@ class Annotation:
 		print ("del", selectedObj)
 		selectedObjSplit = selectedObj.split(":")		
 
-		if currentIndex not in self.annot: return
-		frameAnnot = self.annot[currentIndex]
+		cis = str(currentIndex)
+		if cis not in self.annot: return
+		frameAnnot = self.annot[cis]
 
 		if 'boxes' in frameAnnot:
 			if selectedObjSplit[1] in frameAnnot['boxes']:
@@ -99,8 +102,9 @@ class Annotation:
 
 	def GetNearestPoint(self, currentIndex, pos):
 
-		if currentIndex not in self.annot: return None
-		frameAnnot = self.annot[currentIndex]
+		cis = str(currentIndex)
+		if cis not in self.annot: return None
+		frameAnnot = self.annot[cis]
 		bestDist = None
 		bestId = None
 

@@ -8,9 +8,10 @@ import tempfile
 import subprocess
 
 class AppCore:
-	def __init__(self, pth):
+	def __init__(self, pth, annotPath):
 
 		self.basePath = pth
+		self.annotPath = annotPath
 
 		self.layout = QtWidgets.QHBoxLayout()
 		
@@ -27,7 +28,7 @@ class AppCore:
 		self.listWidget.setFixedWidth(165)
 		self.layout.addWidget(self.listWidget)
 
-		self.frameView = imgframe.FrameView()
+		self.frameView = imgframe.FrameView(self.basePath, self.annotPath)
 		self.layout.addWidget(self.frameView)
 
 		self.listWidget.currentItemChanged.connect(self.index_changed)
@@ -36,13 +37,17 @@ class AppCore:
 		r = self.listWidget.row(i)
 		pth, vid = self.videoList[r]
 
-		self.frameView.SetPath(os.path.join(pth, vid))
+		self.frameView.SetPath(os.path.join(pth, vid), )
 
 if __name__=="__main__":
 
 	pth = "frames/"
 	if len(sys.argv) > 1:
 		pth = sys.argv[1]
+
+	annotPth = "annot/"
+	if len(sys.argv) > 2:
+		annotPth = sys.argv[2]
 
 	# Get entrypoint through which we control underlying Qt framework
 	app = QtWidgets.QApplication([])
@@ -51,7 +56,7 @@ if __name__=="__main__":
 	# instruct it to show() any GUI element
 	window = QtWidgets.QWidget()
 
-	appCore = AppCore(pth)
+	appCore = AppCore(pth, annotPth)
 	window.setLayout(appCore.layout)
 
 	window.show()

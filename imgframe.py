@@ -3,6 +3,7 @@ import annotation
 import dataset_imageseq
 import dataset_video
 import os
+import pathlib
 
 class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 	mousePress = QtCore.Signal(list)
@@ -26,12 +27,14 @@ class MyQGraphicsScene(QtWidgets.QGraphicsScene):
 
 class FrameView(QtWidgets.QWidget):
 
-	def __init__(self):
+	def __init__(self, basePath, annotPath):
 		QtWidgets.QWidget.__init__(self)
 
 		self.frameList = None
 		self.currentIndex = 0
 		self.dataset = None
+		self.basePath = basePath
+		self.annotPath = annotPath
 
 		self.selectedObj = None
 		self.tempCreateBox = None
@@ -41,7 +44,7 @@ class FrameView(QtWidgets.QWidget):
 		self.dragThreshold = 10.0
 		self.dragActive = False
 		self.toolMode = "select"
-		self.annot = annotation.Annotation()
+		self.annot = annotation.Annotation(None)
 		#if os.path.exists("annotation.gz"):
 		#	self.annot.Load("annotation.gz")
 
@@ -65,22 +68,6 @@ class FrameView(QtWidgets.QWidget):
 		self.actionSelect.setChecked(True)
 		self.actionSelect.triggered.connect(self.Select)
 
-		#self.actionAddPoint = self.toolbar.addAction("Add Point")
-		#self.actionAddPoint.setCheckable(True)
-		#self.actionAddPoint.setChecked(False)
-		#self.actionAddPoint.triggered.connect(self.AddPoint)
-
-		#self.actionRemovePoint = self.toolbar.addAction("Remove Point")
-		#self.actionRemovePoint.setCheckable(True)
-		#self.actionRemovePoint.setChecked(False)
-		#self.actionRemovePoint.triggered.connect(self.RemovePoint)
-
-		#self.actionPropagate = self.toolbar.addAction("Propagate All")
-		#self.actionPropagate.triggered.connect(self.Propagate)
-
-		#self.actionPropagatePoint = self.toolbar.addAction("Propagate Point")
-		#self.actionPropagatePoint.triggered.connect(self.PropagatePoint)
-
 		self.actionAddBox = self.toolbar.addAction("Add Box")
 		self.actionAddBox.setCheckable(True)
 		self.actionAddBox.triggered.connect(self.AddBox)
@@ -98,9 +85,11 @@ class FrameView(QtWidgets.QWidget):
 		self._SelectionChanged()
 
 	def SetPath(self, pth):
-		print ("pth", pth)
+		pth2 = pathlib.Path(pth).relative_to(self.basePath)
+		annotFilePath = os.path.join(self.annotPath, str(pth2)+".json.gz")
+
 		self.dataset = dataset_video.DatasetVideo(pth)
-		self.annot = annotation.Annotation()
+		self.annot = annotation.Annotation(annotFilePath)
 
 		self.currentIndex = 0
 		self._SelectionChanged()
@@ -139,19 +128,6 @@ class FrameView(QtWidgets.QWidget):
 			bestId = self.annot.GetNearestPoint(self.currentIndex, ipt)
 			self.SetSelected(bestId)
 
-		#elif self.toolMode == "add":
-		#	#print ("add", ipt)
-		#	ptId = self.annot.AddPoint(self.currentIndex, ipt)
-		#	self.SetSelected(ptId)
-
-		#elif self.toolMode == "remove":
-		#	bestId = self.annot.GetNearestPoint(self.currentIndex, ipt)
-		#	if bestId is None: return
-		#	if self.selectedPointId == bestId:
-		#		self.SetSelected(None)
-		#	self.annot.RemovePoint(self.currentIndex, bestId)
-		#	self.DrawFrame()
-
 		elif self.toolMode == "addbox":
 			if self.tempCreateBox is None:
 				self.tempCreateBox = [ipt, None]
@@ -160,8 +136,7 @@ class FrameView(QtWidgets.QWidget):
 				self.tempCreateBox = None
 				self.DrawFrame()
 
-			#ptId = self.annot.AddPoint(self.currentIndex, ipt)
-			#self.SetSelected(ptId)
+
 
 	def MouseMoveEvent(self, pos):
 
@@ -184,8 +159,7 @@ class FrameView(QtWidgets.QWidget):
 				#if self.selectedObj is not None:
 
 				#	spt = (pos[0] / self.zoomScale, pos[1] / self.zoomScale)
-				#	self.annot.UpdatePoint(self.currentIndex, self.selectedPointId, spt)
-				#	self.DrawFrame()
+
 
 
 	def MouseReleaseEvent(self, pos):
@@ -223,14 +197,6 @@ class FrameView(QtWidgets.QWidget):
 		if a.key() == QtCore.Qt.Key_Delete:
 			self.DeleteSelection()
 
-	#def AddPoint(self):
-	#	self.toolMode = "add"
-	#	self._UpdateToolButtons()
-
-	#def RemovePoint(self):
-	#	self.toolMode = "remove"
-	#	self._UpdateToolButtons()
-
 	def Select(self):
 		self.toolMode = "select"
 		self._UpdateToolButtons()
@@ -245,8 +211,6 @@ class FrameView(QtWidgets.QWidget):
 
 	def _UpdateToolButtons(self):
 		self.actionSelect.setChecked(self.toolMode=="select")
-		#self.actionAddPoint.setChecked(self.toolMode=="add")
-		#self.actionRemovePoint.setChecked(self.toolMode=="remove")
 		self.actionAddBox.setChecked(self.toolMode=="addbox")
 
 	def _SelectionChanged(self):
@@ -255,7 +219,7 @@ class FrameView(QtWidgets.QWidget):
 			self.SetFrame(img)
 
 	def SaveAnnotation(self):
-		self.annot.SaveAnnotation()
+		self.annot.Save()
 
 	def NextFrame(self, onlykeyFrames):
 		if not onlykeyFrames:
@@ -293,5 +257,5 @@ class FrameView(QtWidgets.QWidget):
 		self._SelectionChanged()
 
 	def SaveAnnotation(self):
-		self.annot.Save("annotation.gz")
+		self.annot.Save()
 
