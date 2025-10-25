@@ -72,6 +72,18 @@ class FrameView(QtWidgets.QWidget):
 		self.actionAddBox.setCheckable(True)
 		self.actionAddBox.triggered.connect(self.AddBox)
 
+		self.buttonFirstFrame = self.toolbar.addAction("First Frame")
+		self.buttonFirstFrame.setCheckable(True)
+		self.buttonFirstFrame.triggered.connect(self.FirstFramePressed)
+
+		self.buttonActionFrame = self.toolbar.addAction("Action Start")
+		self.buttonActionFrame.setCheckable(True)
+		self.buttonActionFrame.triggered.connect(self.ActionFramePressed)
+
+		self.buttonLastFrame = self.toolbar.addAction("Last Frame")
+		self.buttonLastFrame.setCheckable(True)
+		self.buttonLastFrame.triggered.connect(self.LastFramePressed)
+
 		self.scene = MyQGraphicsScene()
 		self.scene.mousePress.connect(self.MousePressEvent)
 		self.scene.mouseMove.connect(self.MouseMoveEvent)
@@ -217,6 +229,11 @@ class FrameView(QtWidgets.QWidget):
 			img = self.dataset.GetFrame(self.currentIndex)
 			self.SetFrame(img)
 
+		flags = self.annot.GetFlags(self.currentIndex)
+		self.buttonFirstFrame.setChecked("first_frame" in flags)
+		self.buttonActionFrame.setChecked("action_start" in flags)
+		self.buttonLastFrame.setChecked("last_frame" in flags)
+
 	def SaveAnnotation(self):
 		self.annot.Save()
 
@@ -257,4 +274,14 @@ class FrameView(QtWidgets.QWidget):
 
 	def SaveAnnotation(self):
 		self.annot.Save()
+
+	def FirstFramePressed(self):
+		self.annot.SetFirstFrame(self.currentIndex, self.buttonFirstFrame.isChecked())
+
+	def ActionFramePressed(self):
+		self.annot.SetActionStart(self.currentIndex, self.buttonActionFrame.isChecked())
+
+	def LastFramePressed(self):
+		self.annot.SetLastFrame(self.currentIndex, self.buttonLastFrame.isChecked())
+
 

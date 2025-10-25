@@ -21,7 +21,11 @@ class Annotation:
 
 	def Load(self):
 		inFi = gzip.open(self.pth, mode='rb')
-		self.annot = json.loads(inFi.read().decode('utf-8'))
+		try:
+			self.annot = json.loads(inFi.read().decode('utf-8'))
+		except json.decoder.JSONDecodeError as err:
+			print ("annotation json error:", err)
+			self.annot = {}
 
 
 	def Save(self):
@@ -157,11 +161,12 @@ class Annotation:
 
 	def GetNearestPoint(self, currentIndex, pos):
 
+		bestDist = None
+		bestId = None
+
 		cis = str(currentIndex)
 		if cis in self.annot:
 			frameAnnot = self.annot[cis]
-			bestDist = None
-			bestId = None
 
 			if 'boxes' in frameAnnot:
 				for boxid, box in frameAnnot['boxes'].items():
@@ -176,8 +181,6 @@ class Annotation:
 		cis = str(0)
 		if currentIndex != 0 and cis in self.annot:
 			frameAnnot = self.annot[cis]
-			bestDist = None
-			bestId = None
 
 			if 'boxes' in frameAnnot:
 				for boxid, box in frameAnnot['boxes'].items():
@@ -189,4 +192,38 @@ class Annotation:
 							bestId = "box:"+boxid
 
 		return bestId
+
+	def SetFlag(self, currentIndex, flag, state):
+
+		cis = str(currentIndex)
+		if cis not in self.annot: self.annot[cis] = {}
+		if 'flags' not in self.annot[cis]: self.annot[cis]['flags'] = {}
+
+		if state:
+			newId = str(uuid.uuid4())
+			self.annot[cis]['flags'][newId] = flag
+		else:
+			foundFlagId = None
+			for flagId, flagName in self.annot[cis]['flags'].items():
+				if flagName == flag: foundFlagId = flagId
+			if foundFlagId is not None: del self.annot[cis]['flags'][foundFlagId]
+
+	def SetFirstFrame(self, currentIndex, state):
+		self.SetFlag(currentIndex, "first_frame", state)
+
+	def SetActionStart(self, currentIndex, state):
+		self.SetFlag(currentIndex, "action_start", state)
+
+	def SetLastFrame(self, currentIndex, state):
+		self.SetFlag(currentIndex, "last_frame", state)
+
+	def GetFlags(self, currentIndex):
+		cis = str(currentIndex)
+		if cis not in self.annot:
+			return set([])
+
+		frameAnnot = self.annot[cis]
+		if 'flags' in frameAnnot:
+			return set(frameAnnot['flags'].values())
+		return set([])
 
