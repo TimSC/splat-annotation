@@ -36,6 +36,7 @@ class Annotation:
 
 		outFi = gzip.open(self.pth, mode='wb')
 		outFi.write(json.dumps(self.annot).encode('utf-8'))
+		outFi.close()
 		del outFi
 
 

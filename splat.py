@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import subprocess
+import pathlib
 
 class AppCore:
 	def __init__(self, pth, annotPath):
@@ -16,10 +17,30 @@ class AppCore:
 		self.layout = QtWidgets.QHBoxLayout()
 		
 		self.videoList = []
+		uniqueNames = set()
+
+		# Prioritize loading unique annotated videos
 		for (root,dirs,files) in os.walk(self.basePath): 
 			for fi in files:
-				print (root, fi)
+				pth2 = pathlib.Path(root).relative_to(pth)
+				annotFilePath = os.path.join(annotPath, pth2, str(fi)+".json.gz")
+
+				if fi in uniqueNames:
+					continue
+
+				if os.path.exists(annotFilePath):
+					self.videoList.append((root, fi))
+					uniqueNames.add(fi)
+
+		# Load remaining unannotated unique videos
+		for (root,dirs,files) in os.walk(self.basePath): 
+			for fi in files:
+
+				if fi in uniqueNames:
+					continue
+
 				self.videoList.append((root, fi))
+				uniqueNames.add(fi)
 
 		self.videoList.sort(key=lambda k: k[1])
 
