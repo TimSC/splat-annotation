@@ -9,8 +9,9 @@ import subprocess
 import pathlib
 
 class AppCore:
-	def __init__(self, pth, annotPath):
+	def __init__(self, window, pth, annotPath):
 
+		self.window = window
 		self.basePath = pth
 		self.annotPath = annotPath
 
@@ -60,6 +61,8 @@ class AppCore:
 
 		self.frameView.SetPath(os.path.join(pth, vid), )
 
+		self.window.setWindowTitle("splat.py "+vid)
+
 if __name__=="__main__":
 
 	pth = "frames/"
@@ -77,7 +80,7 @@ if __name__=="__main__":
 	# instruct it to show() any GUI element
 	window = QtWidgets.QWidget()
 
-	appCore = AppCore(pth, annotPth)
+	appCore = AppCore(window, pth, annotPth)
 	window.setLayout(appCore.layout)
 
 	window.show()
